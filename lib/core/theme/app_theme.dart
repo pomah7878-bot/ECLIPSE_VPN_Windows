@@ -41,8 +41,8 @@ class AppTheme {
         iconTheme: IconThemeData(color: textPrimary),
       ),
       
-      // Карточки
-      cardTheme: CardTheme(
+      // Карточки — CardThemeData для Flutter 3.19+
+      cardTheme: CardThemeData(
         color: surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
