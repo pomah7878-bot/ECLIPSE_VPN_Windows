@@ -28,6 +28,13 @@ jobs:
       - name: Create Windows project
         run: flutter create --platforms windows --project-name eclipse_vpn_windows .
       
+      - name: Fix CMakeLists.txt for VS 2022
+        run: |
+          $file = "windows\CMakeLists.txt"
+          $content = Get-Content $file
+          $content = $content -replace 'Visual Studio 16 2019', 'Visual Studio 17 2022'
+          Set-Content $file $content
+      
       - name: Get dependencies
         run: flutter pub get
       
