@@ -26,7 +26,7 @@ jobs:
         run: flutter config --enable-windows-desktop
       
       - name: Create Windows project
-        run: flutter create --platforms windows .
+        run: flutter create --platforms windows --project-name eclipse_vpn_windows .
       
       - name: Get dependencies
         run: flutter pub get
