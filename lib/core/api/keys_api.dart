@@ -4,11 +4,8 @@ import 'api_client.dart';
 class KeysApi {
   final _client = ApiClient();
   
-  /// Получить список ключей пользователя
-  /// GET /api/keys
   Future<List<VpnKey>> getKeys() async {
-    final response = await _client.dio.get('/api/keys');
-    
+    final response = await _client.dio.get('/keys');
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data['keys'] ?? response.data ?? [];
       return data.map((e) => VpnKey.fromJson(e)).toList();
@@ -17,11 +14,8 @@ class KeysApi {
     }
   }
   
-  /// Получить подключения для ключа
-  /// GET /api/key/{key_id}/inbounds
   Future<List<KeyInbound>> getKeyInbounds(int keyId) async {
-    final response = await _client.dio.get('/api/key/$keyId/inbounds');
-    
+    final response = await _client.dio.get('/key/$keyId/inbounds');
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data['inbounds'] ?? response.data ?? [];
       return data.map((e) => KeyInbound.fromJson(e)).toList();
@@ -30,11 +24,8 @@ class KeysApi {
     }
   }
   
-  /// Получить публичные подключения (без сессии, по ID ключа)
-  /// GET /api/public/key/{key_id}/inbounds
   Future<List<KeyInbound>> getPublicKeyInbounds(int keyId) async {
-    final response = await _client.dio.get('/api/public/key/$keyId/inbounds');
-    
+    final response = await _client.dio.get('/public/key/$keyId/inbounds');
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data['inbounds'] ?? response.data ?? [];
       return data.map((e) => KeyInbound.fromJson(e)).toList();

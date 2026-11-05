@@ -3,11 +3,8 @@ import 'api_client.dart';
 class TariffsApi {
   final _client = ApiClient();
   
-  /// Получить список тарифов
-  /// GET /api/tariffs
   Future<List<Tariff>> getTariffs() async {
-    final response = await _client.dio.get('/api/tariffs');
-    
+    final response = await _client.dio.get('/tariffs');
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data['tariffs'] ?? response.data ?? [];
       return data.map((e) => Tariff.fromJson(e)).toList();
@@ -16,11 +13,8 @@ class TariffsApi {
     }
   }
   
-  /// Получить публичные тарифы (для витрины)
-  /// GET /api/public/tariffs
   Future<List<Tariff>> getPublicTariffs() async {
-    final response = await _client.dio.get('/api/public/tariffs');
-    
+    final response = await _client.dio.get('/public/tariffs');
     if (response.statusCode == 200) {
       final List<dynamic> data = response.data['tariffs'] ?? response.data ?? [];
       return data.map((e) => Tariff.fromJson(e)).toList();
