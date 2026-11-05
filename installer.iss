@@ -25,7 +25,6 @@ DisableProgramGroupPage=yes
 ; Выходной файл
 OutputDir=installer
 OutputBaseFilename=ECLIPSE_VPN_Setup_{#MyAppVersion}
-SetupIconFile=assets\icons\app_icon.ico
 
 ; Сжатие
 Compression=lzma2
@@ -55,9 +54,6 @@ Source: "build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags:
 
 ; sing-box VPN-ядро
 Source: "sing-box\sing-box.exe"; DestDir: "{app}"; Flags: ignoreversion
-
-; Иконки
-Source: "assets\icons\*.ico"; DestDir: "{app}\assets"; Flags: ignoreversion
 
 [Icons]
 ; Меню Пуск
@@ -106,7 +102,7 @@ begin
   if CurStep = ssPostInstall then
   begin
     // Разрешаем приложение в фаерволе
-    Exec('netsh', 'advfirewall firewall add rule name="ECLIPSE VPN" dir=in action=allow program="' + ExpandConstant('{app}\{#MyAppExeName}") + '" enable=yes', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('netsh', 'advfirewall firewall add rule name="ECLIPSE VPN" dir=in action=allow program="' + ExpandConstant('{app}\{#MyAppExeName}') + '" enable=yes', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
     Exec('netsh', 'advfirewall firewall add rule name="ECLIPSE VPN sing-box" dir=in action=allow program="' + ExpandConstant('{app}\sing-box.exe') + '" enable=yes', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   end;
 end;
