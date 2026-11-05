@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/api/auth_api.dart';
 import '../../../core/services/oauth_service.dart';
+import '../../../core/services/tray_service.dart';
 import '../../home/presentation/home_screen.dart';
 import 'oauth_buttons.dart';
 
@@ -16,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _codeController = TextEditingController();
   final _authApi = AuthApi();
   final _oauthService = OAuthService();
+  final _trayService = TrayService();
   bool _isLoading = false;
   String? _error;
 
@@ -36,7 +38,9 @@ class _LoginScreenState extends State<LoginScreen> {
       
       if (result.ok && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(trayService: _trayService),
+          ),
         );
       }
     } on ApiException catch (e) {
@@ -59,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen> {
       
       if (result.ok && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(trayService: _trayService),
+          ),
         );
       }
     } catch (e) {
