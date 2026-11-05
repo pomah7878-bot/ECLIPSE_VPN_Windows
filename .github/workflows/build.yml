@@ -30,39 +30,34 @@ jobs:
       - name: Create Windows project
         run: flutter create --platforms windows --project-name eclipse_vpn_windows .
       
-      - name: Check CMakeLists.txt
-        run: |
-          Write-Host "=== windows\CMakeLists.txt ==="
-          Get-Content "windows\CMakeLists.txt"
-          Write-Host "=== windows\runner\CMakeLists.txt ==="
-          Get-Content "windows\runner\CMakeLists.txt"
-      
       - name: Fix CMake generator
+        shell: pwsh
         run: |
-           = "windows\CMakeLists.txt"
-          if (Test-Path ) {
-             = Get-Content  -Raw
-             =  -replace 'Visual Studio 16 2019', 'Visual Studio 17 2022'
-            Set-Content   -NoNewline
+          $file = "windows\CMakeLists.txt"
+          if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            $content = $content -replace 'Visual Studio 16 2019', 'Visual Studio 17 2022'
+            Set-Content $file $content -NoNewline
           }
-           = "windows\runner\CMakeLists.txt"
-          if (Test-Path ) {
-             = Get-Content  -Raw
-             =  -replace 'Visual Studio 16 2019', 'Visual Studio 17 2022'
-            Set-Content   -NoNewline
+          $file = "windows\runner\CMakeLists.txt"
+          if (Test-Path $file) {
+            $content = Get-Content $file -Raw
+            $content = $content -replace 'Visual Studio 16 2019', 'Visual Studio 17 2022'
+            Set-Content $file $content -NoNewline
           }
       
       - name: Get dependencies
         run: flutter pub get
       
       - name: Download sing-box
+        shell: pwsh
         run: |
-           = "1.8.0"
-           = "https://github.com/SagerNet/sing-box/releases/download/v/sing-box--windows-amd64.zip"
-          Invoke-WebRequest -Uri  -OutFile "sing-box.zip"
+          $version = "1.8.0"
+          $url = "https://github.com/SagerNet/sing-box/releases/download/v$version/sing-box-$version-windows-amd64.zip"
+          Invoke-WebRequest -Uri $url -OutFile "sing-box.zip"
           Expand-Archive -Path "sing-box.zip" -DestinationPath "."
           New-Item -ItemType Directory -Path "sing-box" -Force
-          Move-Item -Path "sing-box--windows-amd64\sing-box.exe" -Destination "sing-box\"
+          Move-Item -Path "sing-box-$version-windows-amd64\sing-box.exe" -Destination "sing-box\"
       
       - name: Build Windows
         run: flutter build windows --release
