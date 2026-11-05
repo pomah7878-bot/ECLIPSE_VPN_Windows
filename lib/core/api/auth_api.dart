@@ -5,10 +5,10 @@ class AuthApi {
   final _client = ApiClient();
   
   /// Вход по коду доступа из бота
-  /// POST /api/public/account/session-login
+  /// POST /public/account/session-login
   Future<SessionLoginResponse> loginWithCode(String code) async {
     final response = await _client.dio.post(
-      '/api/public/account/session-login',
+      '/public/account/session-login',
       data: {'code': code},
     );
     
@@ -26,10 +26,10 @@ class AuthApi {
   }
   
   /// Проверка текущей сессии
-  /// GET /api/public/account/session
+  /// GET /public/account/session
   Future<SessionInfo?> getSession() async {
     try {
-      final response = await _client.dio.get('/api/public/account/session');
+      final response = await _client.dio.get('/public/account/session');
       if (response.statusCode == 200 && response.data['ok'] == true) {
         return SessionInfo.fromJson(response.data);
       }
@@ -41,20 +41,20 @@ class AuthApi {
   }
   
   /// Выход
-  /// POST /api/public/account/logout
+  /// POST /public/account/logout
   Future<void> logout() async {
-    await _client.dio.post('/api/public/account/logout');
+    await _client.dio.post('/public/account/logout');
     await _client.clearSession();
   }
   
   /// OAuth-обмен кода на сессию
-  /// POST /api/public/account/oauth-exchange
+  /// POST /public/account/oauth-exchange
   Future<SessionLoginResponse> exchangeOAuthCode({
     required String code,
     String? codeVerifier,
   }) async {
     final response = await _client.dio.post(
-      '/api/public/account/oauth-exchange',
+      '/public/account/oauth-exchange',
       data: {
         'code': code,
         if (codeVerifier != null) 'code_verifier': codeVerifier,
