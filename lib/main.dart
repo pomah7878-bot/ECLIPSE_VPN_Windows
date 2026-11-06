@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'core/theme/app_theme.dart';
-import 'features/auth/presentation/login_screen.dart';
-import 'features/home/presentation/home_screen.dart';
-import 'core/services/auth_service.dart';
-import 'core/services/tray_service.dart';
+import 'presentation/screens/login_screen.dart';
+import 'presentation/screens/main_screen.dart';
+import 'core/api/auth_api.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Настройка окна
+
+  // Настройка окна — вертикальный формат как на телефоне
   await windowManager.ensureInitialized();
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(400, 600),
-    minimumSize: Size(360, 500),
+  const windowOptions = WindowOptions(
+    size: Size(420, 780),
+    minimumSize: Size(380, 700),
+    maximumSize: Size(500, 900),
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
@@ -24,27 +24,24 @@ void main() async {
     await windowManager.show();
     await windowManager.focus();
   });
-  
-  // Инициализация трея
-  final trayService = TrayService();
-  await trayService.initialize();
-  
-  // Проверка авторизации
-  final authService = AuthService();
-  final isLoggedIn = await authService.isLoggedIn();
-  
-  runApp(EclipseVPNApp(isLoggedIn: isLoggedIn, trayService: trayService));
+
+  // Проверка сессии
+  final authApi = AuthApi();
+  AccountSessionResponse? session;
+  try {
+    session = await authApi.getSession();
+  } catch (_) {
+    session = null;
+  }
+  final isLoggedIn = session?.loggedIn ?? false;
+
+  runApp(EclipseVPNApp(isLoggedIn: isLoggedIn));
 }
 
 class EclipseVPNApp extends StatelessWidget {
   final bool isLoggedIn;
-  final TrayService trayService;
-  
-  const EclipseVPNApp({
-    super.key, 
-    required this.isLoggedIn,
-    required this.trayService,
-  });
+
+  const EclipseVPNApp({super.key, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +49,7 @@ class EclipseVPNApp extends StatelessWidget {
       title: 'ECLIPSE VPN',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: isLoggedIn 
-          ? HomeScreen(trayService: trayService) 
-          : const LoginScreen(),
+      home: isLoggedIn ? const MainScreen() : const LoginScreen(),
     );
   }
 }
