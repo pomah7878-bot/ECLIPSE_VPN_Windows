@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'home_screen.dart';
-import 'tariff_screen.dart';
+import 'purchase_screen.dart';
 import 'devices_screen.dart';
 import 'support_screen.dart';
 
 /// Главный экран с нижней навигацией.
 ///
 /// Полностью копирует Android-приложение:
-/// - 4 вкладки: Главная, Тариф, Устройства, Поддержка
+/// - 4 вкладки: Главная, Купить, Устройства, Поддержка
 /// - Золотая иконка активной вкладки
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    TariffScreen(),
+    PurchaseScreen(),
     DevicesScreen(),
     SupportScreen(),
   ];
@@ -61,9 +61,9 @@ class _MainScreenState extends State<MainScreen> {
                 label: 'Главная',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.credit_card_outlined),
-                activeIcon: Icon(Icons.credit_card, color: AppTheme.goldAccent),
-                label: 'Тариф',
+                icon: Icon(Icons.shopping_cart_outlined),
+                activeIcon: Icon(Icons.shopping_cart, color: AppTheme.goldAccent),
+                label: 'Купить',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.devices_outlined),
