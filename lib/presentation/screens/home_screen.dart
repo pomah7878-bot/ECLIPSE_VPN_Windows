@@ -1,8 +1,10 @@
+import 'dart:math' show cos, sin;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/power_button.dart';
 import '../widgets/stats_card.dart';
 import 'modes_screen.dart';
+import 'purchase_screen.dart';
 
 /// Главный экран — полная копия Android-приложения.
 ///
@@ -64,6 +66,13 @@ class _HomeScreenState extends State<HomeScreen>
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const ModesScreen()),
+    );
+  }
+
+  void _openPurchase() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PurchaseScreen()),
     );
   }
 
@@ -205,9 +214,9 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           const Spacer(),
-          // Иконка профиля
+          // Иконка профиля / покупки
           GestureDetector(
-            onTap: () {},
+            onTap: _openPurchase,
             child: Container(
               width: 40,
               height: 40,
@@ -216,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen>
                 border: Border.all(color: AppTheme.goldAccent.withOpacity(0.5)),
               ),
               child: const Icon(
-                Icons.person_outline,
+                Icons.account_circle_outlined,
                 color: AppTheme.goldAccent,
                 size: 22,
               ),
