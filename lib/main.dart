@@ -75,8 +75,13 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
   }
 
   @override
-  void onWindowClose() async {
-    // Корректное закрытие: остановить VPN, уничтожить tray, закрыть окно
+  void onWindowClose() {
+    // WindowListener.onWindowClose — void, нельзя async.
+    // Асинхронная очистка в отдельном методе.
+    _doShutdown();
+  }
+
+  Future<void> _doShutdown() async {
     await _vpn.disconnect();
     await _tray.dispose();
     await windowManager.destroy();
