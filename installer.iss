@@ -2,7 +2,7 @@
 ; Требуется Inno Setup 6.2+
 
 #define MyAppName "ECLIPSE VPN"
-#define MyAppVersion "0.1.21"
+#define MyAppVersion "0.1.22"
 #define MyAppPublisher "ECLIPSE"
 #define MyAppURL "https://github.com/pomah7878-bot/ECLIPSE_VPN"
 #define MyAppExeName "eclipse_vpn_windows.exe"
@@ -54,6 +54,9 @@ Source: "build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags:
 
 ; sing-box VPN-ядро
 Source: "sing-box\sing-box.exe"; DestDir: "{app}"; Flags: ignoreversion
+
+; wintun.dll — драйвер TUN для Windows
+Source: "wintun\wintun.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Меню Пуск
