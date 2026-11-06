@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
@@ -87,9 +89,6 @@ class OAuthService {
   }
 
   /// Вычисляет PKCE code_challenge = SHA256(verifier) в base64url
-  ///
-  /// ЭТО КЛЮЧЕВОЕ ОТЛИЧИЕ от старой версии — теперь используется
-  /// настоящий SHA256 вместо простого base64 от bytes.
   String _generateCodeChallenge(String verifier) {
     final bytes = utf8.encode(verifier);
     final digest = sha256.convert(bytes);
