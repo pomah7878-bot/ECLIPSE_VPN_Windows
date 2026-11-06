@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math' show cos, sin;
 import 'package:flutter/material.dart';
+import '../../core/services/vpn_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../widgets/power_button.dart';
 import '../widgets/stats_card.dart';
@@ -22,12 +24,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+  final _vpn = VpnService();
+  StreamSubscription? _vpnSub;
+
   bool _isConnected = false;
+  bool _isConnecting = false;
   String _serverName = 'Автоподбор сервера';
   String _routingMode = 'Белые списки';
   double _downloadSpeed = 0.0;
   double _uploadSpeed = 0.0;
   int _ping = 0;
+  String? _errorMessage;
 
   late AnimationController _pulseController;
 
@@ -38,28 +45,54 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
+
+    // Слушаем статус VPN
+    _vpnSub = _vpn.statusStream.listen((status) {
+      setState(() {
+        _isConnected = status.isConnected;
+        _isConnecting = status.isConnecting;
+        _serverName = status.server.isNotEmpty ? status.server : 'Автоподбор сервера';
+        _errorMessage = null;
+
+        if (_isConnected) {
+          _pulseController.repeat();
+        } else if (!_isConnecting) {
+          _pulseController.stop();
+          _pulseController.reset();
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
+    _vpnSub?.cancel();
     _pulseController.dispose();
+    _vpn.dispose();
     super.dispose();
   }
 
-  void _toggleConnection() {
-    setState(() {
-      _isConnected = !_isConnected;
-      if (_isConnected) {
-        _serverName = 'Германия';
-        _ping = 15;
-        _pulseController.repeat();
-      } else {
-        _serverName = 'Автоподбор сервера';
-        _ping = 0;
-        _pulseController.stop();
-        _pulseController.reset();
+  Future<void> _toggleConnection() async {
+    if (_isConnecting) return;
+
+    if (_isConnected) {
+      // Отключение
+      setState(() => _isConnecting = true);
+      await _vpn.disconnect();
+    } else {
+      // Подключение
+      setState(() {
+        _isConnecting = true;
+        _errorMessage = null;
+      });
+
+      final success = await _vpn.connect();
+      if (!success && mounted) {
+        setState(() {
+          _errorMessage = _vpn.statusMessage;
+        });
       }
-    });
+    }
   }
 
   void _openModes() {
@@ -85,46 +118,32 @@ class _HomeScreenState extends State<HomeScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             children: [
-              // Шапка: логотип + профиль
               _buildHeader(),
-
               const SizedBox(height: 16),
-
-              // Кнопка питания
               PowerButton(
                 isConnected: _isConnected,
+                isConnecting: _isConnecting,
                 onTap: _toggleConnection,
                 pulseController: _pulseController,
               ),
-
               const SizedBox(height: 24),
-
-              // Карточка статуса VPN
               _StatusCard(
                 isConnected: _isConnected,
+                isConnecting: _isConnecting,
                 onTap: _toggleConnection,
               ),
-
               const SizedBox(height: 12),
-
-              // Карточка сервера
               _ServerCard(
                 serverName: _serverName,
                 isConnected: _isConnected,
                 onTap: () {},
               ),
-
               const SizedBox(height: 12),
-
-              // Карточка маршрутизации
               _RoutingCard(
                 mode: _routingMode,
                 onTap: _openModes,
               ),
-
               const SizedBox(height: 16),
-
-              // Статистика
               Row(
                 children: [
                   Expanded(
@@ -155,7 +174,14 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ],
               ),
-
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: AppTheme.errorRed, fontSize: 13),
+                  textAlign: TextAlign.center,
+                ),
+              ],
               const Spacer(),
             ],
           ),
@@ -169,13 +195,12 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          // Логотип затмения (маленький)
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const RadialGradient(
+              gradient: RadialGradient(
                 colors: [AppTheme.goldAccent, AppTheme.goldLight],
               ),
             ),
@@ -191,7 +216,6 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(width: 12),
-          // Название
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -214,7 +238,6 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
           const Spacer(),
-          // Иконка профиля / покупки
           GestureDetector(
             onTap: _openPurchase,
             child: Container(
@@ -241,9 +264,14 @@ class _HomeScreenState extends State<HomeScreen>
 
 class _StatusCard extends StatelessWidget {
   final bool isConnected;
+  final bool isConnecting;
   final VoidCallback onTap;
 
-  const _StatusCard({required this.isConnected, required this.onTap});
+  const _StatusCard({
+    required this.isConnected,
+    required this.isConnecting,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -251,18 +279,30 @@ class _StatusCard extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          Icon(
-            isConnected ? Icons.lock : Icons.lock_open,
-            color: isConnected ? AppTheme.successGreen : AppTheme.textMuted,
-            size: 28,
-          ),
+          if (isConnecting)
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppTheme.goldAccent,
+              ),
+            )
+          else
+            Icon(
+              isConnected ? Icons.lock : Icons.lock_open,
+              color: isConnected ? AppTheme.successGreen : AppTheme.textMuted,
+              size: 28,
+            ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isConnected ? 'VPN подключён' : 'VPN отключён',
+                  isConnecting
+                      ? 'Подключение...'
+                      : (isConnected ? 'VPN подключён' : 'VPN отключён'),
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
