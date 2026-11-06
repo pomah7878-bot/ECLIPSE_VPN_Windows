@@ -7,14 +7,17 @@ import '../../core/theme/app_theme.dart';
 /// Полная копия Android-приложения:
 /// - В отключенном состоянии: золотой круг с иконкой питания
 /// - В подключенном: пульсирующие лучи + зелёный щит + таймер
+/// - При подключении: спиннер вместо иконки
 class PowerButton extends StatelessWidget {
   final bool isConnected;
+  final bool isConnecting;
   final VoidCallback onTap;
   final AnimationController pulseController;
 
   const PowerButton({
     super.key,
     required this.isConnected,
+    this.isConnecting = false,
     required this.onTap,
     required this.pulseController,
   });
@@ -22,7 +25,7 @@ class PowerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isConnecting ? null : onTap,
       child: SizedBox(
         width: 260,
         height: 260,
@@ -32,6 +35,7 @@ class PowerButton extends StatelessWidget {
             return CustomPaint(
               painter: _PowerButtonPainter(
                 isConnected: isConnected,
+                isConnecting: isConnecting,
                 pulseValue: pulseController.isAnimating
                     ? pulseController.value
                     : 0,
@@ -40,8 +44,17 @@ class PowerButton extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Иконка
-                    if (isConnected)
+                    // Иконка / спиннер
+                    if (isConnecting)
+                      const SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: AppTheme.goldAccent,
+                        ),
+                      )
+                    else if (isConnected)
                       const Icon(
                         Icons.shield,
                         color: AppTheme.successGreen,
@@ -56,7 +69,9 @@ class PowerButton extends StatelessWidget {
                     const SizedBox(height: 8),
                     // Текст
                     Text(
-                      isConnected ? 'ПОДКЛЮЧЕНО' : 'ПОДКЛЮЧИТЬ',
+                      isConnecting
+                          ? 'ПОДКЛЮЧЕНИЕ...'
+                          : (isConnected ? 'ПОДКЛЮЧЕНО' : 'ПОДКЛЮЧИТЬ'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -92,9 +107,14 @@ class PowerButton extends StatelessWidget {
 
 class _PowerButtonPainter extends CustomPainter {
   final bool isConnected;
+  final bool isConnecting;
   final double pulseValue;
 
-  _PowerButtonPainter({required this.isConnected, required this.pulseValue});
+  _PowerButtonPainter({
+    required this.isConnected,
+    required this.isConnecting,
+    required this.pulseValue,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -102,7 +122,7 @@ class _PowerButtonPainter extends CustomPainter {
     final baseRadius = size.width / 2 - 20;
 
     // 1. Внешнее свечение (пульсирует при подключении)
-    if (isConnected) {
+    if (isConnected || isConnecting) {
       final glowRadius = baseRadius + 10 + (pulseValue * 15);
       final glowPaint = Paint()
         ..shader = RadialGradient(
@@ -117,7 +137,7 @@ class _PowerButtonPainter extends CustomPainter {
       canvas.drawCircle(center, glowRadius, glowPaint);
     }
 
-    // 2. Лучи (rays) — золотые линии вокруг круга
+    // 2. Лучи (rays)
     final rayCount = isConnected ? 48 : 24;
     final rayInner = baseRadius - 8;
     final rayOuter = baseRadius + (isConnected ? 12 + pulseValue * 8 : 8);
@@ -133,7 +153,7 @@ class _PowerButtonPainter extends CustomPainter {
         center.dy + rayOuter * sin(angle),
       );
 
-      final opacity = isConnected
+      final opacity = isConnected || isConnecting
           ? 0.4 + pulseValue * 0.3
           : 0.25;
       final rayPaint = Paint()
@@ -144,24 +164,28 @@ class _PowerButtonPainter extends CustomPainter {
       canvas.drawLine(inner, outer, rayPaint);
     }
 
-    // 3. Основной круг (фон кнопки)
+    // 3. Основной круг
     final circlePaint = Paint()
       ..color = AppTheme.eclipseBlack
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, baseRadius - 4, circlePaint);
 
-    // 4. Обводка круга
+    // 4. Обводка
     final borderPaint = Paint()
-      ..color = AppTheme.goldAccent.withOpacity(isConnected ? 0.8 : 0.5)
+      ..color = AppTheme.goldAccent.withOpacity(
+        isConnected || isConnecting ? 0.8 : 0.5,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = isConnected ? 3 : 2;
     canvas.drawCircle(center, baseRadius - 4, borderPaint);
 
-    // 5. Внутреннее свечение (тонкое)
+    // 5. Внутреннее свечение
     final innerGlow = Paint()
       ..shader = RadialGradient(
         colors: [
-          AppTheme.goldAccent.withOpacity(isConnected ? 0.15 : 0.08),
+          AppTheme.goldAccent.withOpacity(
+            isConnected || isConnecting ? 0.15 : 0.08,
+          ),
           Colors.transparent,
         ],
       ).createShader(Rect.fromCircle(center: center, radius: baseRadius * 0.7));
@@ -171,6 +195,7 @@ class _PowerButtonPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _PowerButtonPainter oldDelegate) {
     return oldDelegate.isConnected != isConnected ||
+        oldDelegate.isConnecting != isConnecting ||
         oldDelegate.pulseValue != pulseValue;
   }
 }
