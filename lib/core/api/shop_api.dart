@@ -16,7 +16,7 @@ class ShopApi {
     if (response.statusCode == 200) {
       return TariffsResponse.fromJson(response.data);
     } else {
-      throw ApiException(message: 'Ошибка загрузки тарифов');
+      throw _ApiException(message: 'Ошибка загрузки тарифов');
     }
   }
 
@@ -35,7 +35,7 @@ class ShopApi {
     if (response.statusCode == 200) {
       return TrialCreateResponse.fromJson(response.data);
     } else {
-      throw ApiException(message: 'Ошибка создания пробного периода');
+      throw _ApiException(message: 'Ошибка создания пробного периода');
     }
   }
 
@@ -51,11 +51,11 @@ class ShopApi {
     if (response.statusCode == 200) {
       final parsed = PayCreateResponse.fromJson(response.data);
       if (parsed.orderId == null) {
-        throw ApiException(message: parsed.error ?? 'Не удалось создать платёж');
+        throw _ApiException(message: parsed.error ?? 'Не удалось создать платёж');
       }
       return parsed;
     } else {
-      throw ApiException(message: 'Ошибка создания платежа');
+      throw _ApiException(message: 'Ошибка создания платежа');
     }
   }
 
@@ -71,7 +71,7 @@ class ShopApi {
     if (response.statusCode == 200) {
       return PayCheckResponse.fromJson(response.data);
     } else {
-      throw ApiException(message: 'Ошибка проверки платежа');
+      throw _ApiException(message: 'Ошибка проверки платежа');
     }
   }
 
@@ -89,11 +89,11 @@ class ShopApi {
     if (response.statusCode == 200) {
       final parsed = KeyRenewCreateResponse.fromJson(response.data);
       if (parsed.error != null) {
-        throw ApiException(message: parsed.message ?? parsed.error!);
+        throw _ApiException(message: parsed.message ?? parsed.error!);
       }
       return parsed;
     } else {
-      throw ApiException(message: 'Ошибка создания продления');
+      throw _ApiException(message: 'Ошибка создания продления');
     }
   }
 
@@ -107,7 +107,7 @@ class ShopApi {
     if (response.statusCode == 200) {
       return KeyRenewCheckResponse.fromJson(response.data);
     } else {
-      throw ApiException(message: 'Ошибка проверки продления');
+      throw _ApiException(message: 'Ошибка проверки продления');
     }
   }
 }
@@ -274,10 +274,10 @@ class KeyRenewCheckResponse {
   }
 }
 
-class ApiException implements Exception {
+class _ApiException implements Exception {
   final String message;
 
-  ApiException({required this.message});
+  _ApiException({required this.message});
 
   @override
   String toString() => message;
