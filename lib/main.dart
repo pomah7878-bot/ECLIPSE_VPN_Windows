@@ -6,12 +6,10 @@ import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'core/api/auth_api.dart';
 import 'core/services/vpn_service.dart';
-import 'core/services/tray_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Настройка окна — вертикальный формат как на телефоне
   await windowManager.ensureInitialized();
   const windowOptions = WindowOptions(
     size: Size(420, 780),
@@ -28,7 +26,6 @@ void main() async {
     await windowManager.focus();
   });
 
-  // Проверка сессии
   final authApi = AuthApi();
   AccountSessionResponse? session;
   try {
@@ -43,7 +40,6 @@ void main() async {
 
 class EclipseVPNApp extends StatefulWidget {
   final bool isLoggedIn;
-
   const EclipseVPNApp({super.key, required this.isLoggedIn});
 
   @override
@@ -52,45 +48,26 @@ class EclipseVPNApp extends StatefulWidget {
 
 class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
   final _vpn = VpnService();
-  final _tray = TrayService();
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
-    _initWindow();
-    _tray.initialize();
-  }
-
-  Future<void> _initWindow() async {
-    await windowManager.setPreventClose(true);
+    windowManager.setPreventClose(true);
   }
 
   @override
   void dispose() {
     windowManager.removeListener(this);
-    _tray.dispose();
     _vpn.dispose();
     super.dispose();
   }
 
   @override
   void onWindowClose() {
-    // WindowListener.onWindowClose — void, нельзя async.
-    // Асинхронная очистка в отдельном методе.
-    _doShutdown();
-  }
-
-  Future<void> _doShutdown() async {
-    await _vpn.disconnect();
-    await _tray.dispose();
-    await windowManager.destroy();
+    _vpn.disconnect();
+    windowManager.destroy();
     exit(0);
-  }
-
-  @override
-  void onWindowEvent(String eventName) {
-    // Ничего не делаем для других событий
   }
 
   @override
