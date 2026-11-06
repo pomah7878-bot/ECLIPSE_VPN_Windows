@@ -156,7 +156,6 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       final resp = await _shopApi.createTrial();
       final subUrl = resp.subUrl;
       if (subUrl != null && subUrl.isNotEmpty) {
-        // В Windows нет auto-import — просто показываем success
         setState(() => _state = _PurchaseState.importSuccess);
       } else {
         setState(() {
@@ -219,7 +218,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
             });
             return false;
           default:
-            return true; // pending — продолжаем
+            return true;
         }
       } catch (_) {
         return true;
@@ -467,9 +466,9 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          ..._keys.map((key) => _KeyCard(
-            key: key,
-            onRenew: () => _createRenewal(key.keyId),
+          ..._keys.map((k) => _KeyCard(
+            vpnKey: k,
+            onRenew: () => _createRenewal(k.keyId),
           )),
         ],
         if (_keys.isEmpty)
@@ -577,9 +576,9 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
   Widget _buildWaitingPayment({bool isRenew = false}) {
     return Column(
       children: [
-        const Text(
-          'Ожидание оплаты',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+        Text(
+          isRenew ? 'Ожидание продления' : 'Ожидание оплаты',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
         ),
         if (_amountRub != null)
           Padding(
@@ -733,10 +732,10 @@ class _SocialButton extends StatelessWidget {
 }
 
 class _KeyCard extends StatelessWidget {
-  final AccountKeyDto key;
+  final AccountKeyDto vpnKey;
   final VoidCallback onRenew;
 
-  const _KeyCard({required this.key, required this.onRenew});
+  const _KeyCard({required this.vpnKey, required this.onRenew});
 
   @override
   Widget build(BuildContext context) {
@@ -752,12 +751,12 @@ class _KeyCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            key.displayName,
+            vpnKey.displayName,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
           ),
-          if (key.serverName != null)
+          if (vpnKey.serverName != null)
             Text(
-              key.serverName!,
+              vpnKey.serverName!,
               style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
             ),
           const SizedBox(height: 8),
@@ -765,16 +764,16 @@ class _KeyCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  key.daysLeft != null ? 'Осталось ${key.daysLeft} дн.' : 'Без срока',
+                  vpnKey.daysLeft != null ? 'Осталось ${vpnKey.daysLeft} дн.' : 'Без срока',
                   style: TextStyle(
                     fontSize: 14,
-                    color: (key.daysLeft ?? 999) > 3 ? AppTheme.successGreen : AppTheme.errorRed,
+                    color: (vpnKey.daysLeft ?? 999) > 3 ? AppTheme.successGreen : AppTheme.errorRed,
                   ),
                 ),
               ),
-              if (key.trafficLimitGb != null)
+              if (vpnKey.trafficLimitGb != null)
                 Text(
-                  '${key.trafficUsedGb.toStringAsFixed(1)} / ${key.trafficLimitGb!.toStringAsFixed(0)} GB',
+                  '${vpnKey.trafficUsedGb.toStringAsFixed(1)} / ${vpnKey.trafficLimitGb!.toStringAsFixed(0)} GB',
                   style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
             ],
