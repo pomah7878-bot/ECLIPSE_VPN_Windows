@@ -10,7 +10,7 @@ class KeysApi {
       final List<dynamic> data = response.data['keys'] ?? response.data ?? [];
       return data.map((e) => VpnKey.fromJson(e)).toList();
     } else {
-      throw ApiException(message: 'Ошибка загрузки ключей');
+      throw _ApiException(message: 'Ошибка загрузки ключей');
     }
   }
   
@@ -20,7 +20,7 @@ class KeysApi {
       final List<dynamic> data = response.data['inbounds'] ?? response.data ?? [];
       return data.map((e) => KeyInbound.fromJson(e)).toList();
     } else {
-      throw ApiException(message: 'Ошибка загрузки подключений');
+      throw _ApiException(message: 'Ошибка загрузки подключений');
     }
   }
   
@@ -30,7 +30,7 @@ class KeysApi {
       final List<dynamic> data = response.data['inbounds'] ?? response.data ?? [];
       return data.map((e) => KeyInbound.fromJson(e)).toList();
     } else {
-      throw ApiException(message: 'Ошибка загрузки подключений');
+      throw _ApiException(message: 'Ошибка загрузки подключений');
     }
   }
 }
@@ -103,10 +103,10 @@ class KeyInbound {
   }
 }
 
-class ApiException implements Exception {
+class _ApiException implements Exception {
   final String message;
   
-  ApiException({required this.message});
+  _ApiException({required this.message});
   
   @override
   String toString() => message;
