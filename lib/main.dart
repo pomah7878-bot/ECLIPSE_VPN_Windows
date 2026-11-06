@@ -58,7 +58,12 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
   void initState() {
     super.initState();
     windowManager.addListener(this);
+    _initWindow();
     _tray.initialize();
+  }
+
+  Future<void> _initWindow() async {
+    await windowManager.setPreventClose(true);
   }
 
   @override
