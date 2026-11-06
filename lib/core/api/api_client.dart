@@ -2,6 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 
+/// Клиент API для ECLIPSE VPN Windows.
+///
+/// Полностью совместим с Android-приложением:
+/// - Cookie-сессия сохраняется между запусками через CookieJar
+/// - Заголовок X-Eclipse-App: 1 для идентификации приложения
+/// - Базовый URL: https://eclipse.unlimited.bot.nu/api
 class ApiClient {
   static const String baseUrl = 'https://eclipse.unlimited.bot.nu';
   static const String apiBaseUrl = '$baseUrl/api';
@@ -20,6 +26,7 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-Eclipse-App': '1',
       },
     ));
 

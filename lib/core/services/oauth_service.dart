@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'dart:math';
+import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api/auth_api.dart';
 import '../api/api_client.dart';
@@ -12,6 +12,14 @@ enum OAuthProvider {
   vk,
 }
 
+/// Сервис OAuth-авторизации.
+///
+/// Реализует PKCE (Proof Key for Code Exchange) как в Android:
+/// 1. Генерирует code_verifier (32 случайных байта, base64url)
+/// 2. Вычисляет code_challenge = SHA256(verifier), base64url
+/// 3. Открывает браузер с challenge
+/// 4. Получает code через локальный callback-сервер
+/// 5. Обменивает code + verifier на cookie-сессию
 class OAuthService {
   final _authApi = AuthApi();
 
@@ -19,7 +27,7 @@ class OAuthService {
   Future<SessionLoginResponse> signInWithProvider(OAuthProvider provider) async {
     final providerName = _providerName(provider);
 
-    // Генерируем PKCE для безопасности
+    // PKCE: генерируем verifier и challenge
     final codeVerifier = _generateCodeVerifier();
     final codeChallenge = _generateCodeChallenge(codeVerifier);
 
@@ -27,7 +35,7 @@ class OAuthService {
     final callbackServer = await _startCallbackServer();
     final callbackUrl = 'http://127.0.0.1:${callbackServer.port}/oauth-callback';
 
-    // Формируем URL авторизации через бота
+    // Формируем URL авторизации
     final fullUrl =
         '${ApiClient.baseUrl}/api/public/account/oauth-exchange'
         '?provider=$providerName'
@@ -68,19 +76,24 @@ class OAuthService {
     }
   }
 
+  /// Генерирует PKCE code_verifier — 32 случайных байта в base64url
   String _generateCodeVerifier() {
-    final bytes = List<int>.generate(64, (_) => _secureRandom(256));
+    final bytes = Uint8List(32);
+    final random = Random.secure();
+    for (var i = 0; i < 32; i++) {
+      bytes[i] = random.nextInt(256);
+    }
     return base64Url.encode(bytes).replaceAll('=', '');
   }
 
+  /// Вычисляет PKCE code_challenge = SHA256(verifier) в base64url
+  ///
+  /// ЭТО КЛЮЧЕВОЕ ОТЛИЧИЕ от старой версии — теперь используется
+  /// настоящий SHA256 вместо простого base64 от bytes.
   String _generateCodeChallenge(String verifier) {
     final bytes = utf8.encode(verifier);
-    // В реальном приложении используйте crypto для SHA256
-    return base64Url.encode(bytes).replaceAll('=', '');
-  }
-
-  int _secureRandom(int max) {
-    return DateTime.now().microsecondsSinceEpoch % max;
+    final digest = sha256.convert(bytes);
+    return base64Url.encode(digest.bytes).replaceAll('=', '');
   }
 
   Future<_CallbackServer> _startCallbackServer() async {
