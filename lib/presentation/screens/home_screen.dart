@@ -9,12 +9,6 @@ import 'modes_screen.dart';
 import 'purchase_screen.dart';
 
 /// Главный экран — полная копия Android-приложения.
-///
-/// Скриншоты: home.jpg (отключено), connected.jpg (подключено)
-/// - Логотип + иконка профиля вверху
-/// - Большая круглая кнопка питания с золотыми лучами
-/// - Карточки: статус VPN, сервер, маршрутизация
-/// - Статистика: скорость вниз/вверх, пинг
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -35,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen>
   double _uploadSpeed = 0.0;
   int _ping = 0;
   String? _errorMessage;
+  String _logs = '';
 
   late AnimationController _pulseController;
 
@@ -46,13 +41,14 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 1500),
     );
 
-    // Слушаем статус VPN
     _vpnSub = _vpn.statusStream.listen((status) {
+      if (!mounted) return;
       setState(() {
         _isConnected = status.isConnected;
         _isConnecting = status.isConnecting;
         _serverName = status.server.isNotEmpty ? status.server : 'Автоподбор сервера';
-        _errorMessage = null;
+        _errorMessage = status.isConnected || status.isConnecting ? null : _errorMessage;
+        _logs = status.logs;
 
         if (_isConnected) {
           _pulseController.repeat();
@@ -68,7 +64,6 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     _vpnSub?.cancel();
     _pulseController.dispose();
-    _vpn.dispose();
     super.dispose();
   }
 
@@ -76,14 +71,13 @@ class _HomeScreenState extends State<HomeScreen>
     if (_isConnecting) return;
 
     if (_isConnected) {
-      // Отключение
       setState(() => _isConnecting = true);
       await _vpn.disconnect();
     } else {
-      // Подключение
       setState(() {
         _isConnecting = true;
         _errorMessage = null;
+        _logs = '';
       });
 
       final success = await _vpn.connect();
@@ -176,13 +170,45 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: AppTheme.errorRed, fontSize: 13),
-                  textAlign: TextAlign.center,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.errorRed.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.errorRed.withOpacity(0.3)),
+                  ),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: AppTheme.errorRed, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
-              const Spacer(),
+              if (_logs.isNotEmpty && !_isConnected) ...[
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardDark,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        _logs,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else
+                const Spacer(),
             ],
           ),
         ),
