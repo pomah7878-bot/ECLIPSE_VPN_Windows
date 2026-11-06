@@ -63,6 +63,15 @@ jobs:
           New-Item -ItemType Directory -Path "sing-box" -Force
           Move-Item -Path "sing-box-$version-windows-amd64\sing-box.exe" -Destination "sing-box\"
       
+      - name: Download wintun
+        shell: pwsh
+        run: |
+          $url = "https://www.wintun.net/builds/wintun-0.14.1.zip"
+          Invoke-WebRequest -Uri $url -OutFile "wintun.zip"
+          Expand-Archive -Path "wintun.zip" -DestinationPath "."
+          New-Item -ItemType Directory -Path "wintun" -Force
+          Move-Item -Path "wintun-0.14.1\bin\amd64\wintun.dll" -Destination "wintun\"
+      
       - name: Build Windows
         run: flutter build windows --release
       
