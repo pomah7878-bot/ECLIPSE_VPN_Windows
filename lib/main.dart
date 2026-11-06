@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
 import 'core/api/auth_api.dart';
+import 'core/services/vpn_service.dart';
+import 'core/services/tray_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,10 +41,47 @@ void main() async {
   runApp(EclipseVPNApp(isLoggedIn: isLoggedIn));
 }
 
-class EclipseVPNApp extends StatelessWidget {
+class EclipseVPNApp extends StatefulWidget {
   final bool isLoggedIn;
 
   const EclipseVPNApp({super.key, required this.isLoggedIn});
+
+  @override
+  State<EclipseVPNApp> createState() => _EclipseVPNAppState();
+}
+
+class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
+  final _vpn = VpnService();
+  final _tray = TrayService();
+
+  @override
+  void initState() {
+    super.initState();
+    windowManager.addListener(this);
+    _tray.initialize();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    _tray.dispose();
+    _vpn.dispose();
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    // Корректное закрытие: остановить VPN, уничтожить tray, закрыть окно
+    await _vpn.disconnect();
+    await _tray.dispose();
+    await windowManager.destroy();
+    exit(0);
+  }
+
+  @override
+  void onWindowEvent(String eventName) {
+    // Ничего не делаем для других событий
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +89,7 @@ class EclipseVPNApp extends StatelessWidget {
       title: 'ECLIPSE VPN',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: isLoggedIn ? const MainScreen() : const LoginScreen(),
+      home: widget.isLoggedIn ? const MainScreen() : const LoginScreen(),
     );
   }
 }
