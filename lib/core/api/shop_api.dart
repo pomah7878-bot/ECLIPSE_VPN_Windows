@@ -24,9 +24,6 @@ class ShopApi {
 
   /// Активирует бесплатный пробный период.
   /// POST /public/trial/create
-  ///
-  /// Запрос помечен заголовком X-Eclipse-App — сервер пропускает
-  /// проверку Cloudflare Turnstile для этого канала.
   Future<TrialCreateResponse> createTrial() async {
     final response = await _client.dio.post(
       '/public/trial/create',
@@ -61,8 +58,6 @@ class ShopApi {
 
   /// Проверяет статус платежа.
   /// POST /public/pay/check
-  ///
-  /// При status="paid" ответ содержит sub_url для подключения.
   Future<PayCheckResponse> checkPayment(String orderId) async {
     final response = await _client.dio.post(
       '/public/pay/check',
@@ -79,8 +74,6 @@ class ShopApi {
 
   /// Создаёт платёж для продления существующего ключа.
   /// POST /public/account/key/renew/create
-  ///
-  /// Сервер сам подставляет текущий тариф ключа.
   Future<KeyRenewCreateResponse> createKeyRenewal(int keyId) async {
     final response = await _client.dio.post(
       '/public/account/key/renew/create',
@@ -122,11 +115,15 @@ class TariffsResponse {
 
   factory TariffsResponse.fromJson(Map<String, dynamic> json) {
     return TariffsResponse(
-      tariffs: (json['tariffs'] as List<dynamic>? ?? [])
-          .map((e) => TariffDto.fromJson(e))
-          .toList(),
+      tariffs: _parseList(json['tariffs']).map((e) => TariffDto.fromJson(e)).toList(),
       trialAvailable: json['trial_available'] ?? false,
     );
+  }
+
+  static List<dynamic> _parseList(dynamic value) {
+    if (value is List) return value;
+    if (value is Map) return [value];
+    return [];
   }
 }
 
