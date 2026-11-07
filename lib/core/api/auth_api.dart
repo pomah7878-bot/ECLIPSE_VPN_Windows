@@ -14,10 +14,6 @@ class AuthApi {
 
   /// Вход по коду доступа из бота.
   /// POST /public/account/session-login
-  ///
-  /// При успехе сервер устанавливает cookie сессии автоматически
-  /// через CookieManager. Код — либо из Telegram-бота, либо код
-  /// анонимной покупки (claim_code).
   Future<SessionLoginResponse> loginWithCode(String code) async {
     final response = await _client.dio.post(
       '/public/account/session-login',
@@ -39,9 +35,6 @@ class AuthApi {
 
   /// Проверка текущей сессии.
   /// GET /public/account/session
-  ///
-  /// Возвращает данные аккаунта: тип, ключи, баланс.
-  /// Если сессия истекла — возвращает null (401).
   Future<AccountSessionResponse?> getSession() async {
     try {
       final response = await _client.dio.get('/public/account/session');
@@ -64,10 +57,6 @@ class AuthApi {
 
   /// OAuth-обмен кода на сессию.
   /// POST /public/account/oauth-exchange
-  ///
-  /// После получения кода через deep-link из браузера обменивает
-  /// его на cookie-сессию. Если использовался PKCE, передаёт
-  /// code_verifier для верификации.
   Future<SessionLoginResponse> exchangeOAuthCode({
     required String code,
     String? codeVerifier,
@@ -97,9 +86,6 @@ class AuthApi {
 
   /// Привязка текущего OAuth-аккаунта к существующему клиенту бота.
   /// POST /public/account/link-code
-  ///
-  /// Используется когда пользователь вошёл через Google/Яндекс/VK
-  /// и хочет привязать свои старые ключи из бота.
   Future<LinkCodeResponse> linkBotCode(String code) async {
     final response = await _client.dio.post(
       '/public/account/link-code',
@@ -149,11 +135,15 @@ class AccountSessionResponse {
       loggedIn: json['logged_in'] ?? false,
       accountType: json['account_type'],
       canLinkOauth: json['can_link_oauth'] ?? false,
-      keys: (json['keys'] as List<dynamic>? ?? [])
-          .map((e) => AccountKeyDto.fromJson(e))
-          .toList(),
+      keys: _parseList(json['keys']).map((e) => AccountKeyDto.fromJson(e)).toList(),
       balanceHuman: json['balance_human'],
     );
+  }
+
+  static List<dynamic> _parseList(dynamic value) {
+    if (value is List) return value;
+    if (value is Map) return [value];
+    return [];
   }
 }
 
@@ -194,16 +184,13 @@ class AccountKeyDto {
     );
   }
 
-  /// Оставшиеся дни
   int? get daysLeft {
     if (expiresAt == null) return null;
     return expiresAt!.difference(DateTime.now()).inDays;
   }
 
-  /// Использовано трафика в GB
   double get trafficUsedGb => trafficUsed / (1024 * 1024 * 1024);
 
-  /// Лимит трафика в GB
   double? get trafficLimitGb =>
       trafficLimit > 0 ? trafficLimit / (1024 * 1024 * 1024) : null;
 }
