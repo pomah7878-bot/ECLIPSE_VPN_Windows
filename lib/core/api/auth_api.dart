@@ -1,18 +1,17 @@
-import 'package:dio/dio.dart';
 import 'api_client.dart';
+import 'api_exception.dart';
 
-/// API для авторизации и управления сессией.
+/// Авторизация и управление сессией.
 ///
-/// Полностью совместим с Android ShopApiClient:
+/// Совместимо с Android ShopApiClient:
 /// - sessionLogin — вход по коду доступа из бота
 /// - getSession — проверка текущей сессии
-/// - exchangeOAuthCode — обмен OAuth кода на сессию
+/// - exchangeOAuthCode — обмен OAuth-кода на сессию
+/// - linkBotCode — привязка OAuth-аккаунта к боту
 /// - logout — выход
-/// - linkBotCode — привязка OAuth аккаунта к боту
 class AuthApi {
   final _client = ApiClient();
 
-  /// Вход по коду доступа из бота.
   /// POST /public/account/session-login
   Future<SessionLoginResponse> loginWithCode(String code) async {
     final response = await _client.dio.post(
@@ -25,15 +24,13 @@ class AuthApi {
         ok: true,
         accountType: response.data['account_type'] ?? 'telegram',
       );
-    } else {
-      throw ApiException(
-        message: response.data['message'] ?? 'Ошибка входа',
-        code: response.data['error'],
-      );
     }
+    throw ApiException(
+      message: response.data['message'] ?? 'Ошибка входа',
+      code: response.data['error']?.toString(),
+    );
   }
 
-  /// Проверка текущей сессии.
   /// GET /public/account/session
   Future<AccountSessionResponse?> getSession() async {
     try {
@@ -42,20 +39,23 @@ class AuthApi {
         return AccountSessionResponse.fromJson(response.data);
       }
       return null;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return null;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      final status = _statusCodeOf(e);
+      if (status == 401) return null;
       rethrow;
     }
   }
 
-  /// Выход из аккаунта.
   /// POST /public/account/logout
   Future<void> logout() async {
-    await _client.dio.post('/public/account/logout');
-    await _client.clearSession();
+    try {
+      await _client.dio.post('/public/account/logout');
+    } finally {
+      await _client.clearSession();
+    }
   }
 
-  /// OAuth-обмен кода на сессию.
   /// POST /public/account/oauth-exchange
   Future<SessionLoginResponse> exchangeOAuthCode({
     required String code,
@@ -76,15 +76,13 @@ class AuthApi {
         ok: true,
         accountType: response.data['account_type'] ?? 'oauth',
       );
-    } else {
-      throw ApiException(
-        message: response.data['message'] ?? 'Ошибка OAuth',
-        code: response.data['error'],
-      );
     }
+    throw ApiException(
+      message: response.data['message'] ?? 'Ошибка OAuth',
+      code: response.data['error']?.toString(),
+    );
   }
 
-  /// Привязка текущего OAuth-аккаунта к существующему клиенту бота.
   /// POST /public/account/link-code
   Future<LinkCodeResponse> linkBotCode(String code) async {
     final response = await _client.dio.post(
@@ -94,10 +92,16 @@ class AuthApi {
 
     if (response.statusCode == 200) {
       return LinkCodeResponse.fromJson(response.data);
-    } else {
-      throw ApiException(
-        message: response.data['message'] ?? 'Ошибка привязки',
-      );
+    }
+    throw ApiException(message: 'Ошибка привязки');
+  }
+
+  static int? _statusCodeOf(Object e) {
+    try {
+      final dynamic d = e;
+      return d.response?.statusCode as int?;
+    } catch (_) {
+      return null;
     }
   }
 }
@@ -111,7 +115,7 @@ class SessionLoginResponse {
   SessionLoginResponse({required this.ok, required this.accountType});
 }
 
-/// Данные сессии аккаунта — полная совместимость с Android.
+/// Данные сессии аккаунта.
 class AccountSessionResponse {
   final bool ok;
   final bool loggedIn;
@@ -133,14 +137,17 @@ class AccountSessionResponse {
     return AccountSessionResponse(
       ok: json['ok'] ?? false,
       loggedIn: json['logged_in'] ?? false,
-      accountType: json['account_type'],
+      accountType: json['account_type']?.toString(),
       canLinkOauth: json['can_link_oauth'] ?? false,
-      keys: _parseList(json['keys']).map((e) => AccountKeyDto.fromJson(e)).toList(),
-      balanceHuman: json['balance_human'],
+      keys: _asList(json['keys'])
+          .whereType<Map<String, dynamic>>()
+          .map(AccountKeyDto.fromJson)
+          .toList(),
+      balanceHuman: json['balance_human']?.toString(),
     );
   }
 
-  static List<dynamic> _parseList(dynamic value) {
+  static List<dynamic> _asList(dynamic value) {
     if (value is List) return value;
     if (value is Map) return [value];
     return [];
@@ -171,18 +178,20 @@ class AccountKeyDto {
 
   factory AccountKeyDto.fromJson(Map<String, dynamic> json) {
     return AccountKeyDto(
-      keyId: json['key_id'] ?? 0,
-      displayName: json['display_name'] ?? 'Ключ #${json['key_id']}',
+      keyId: _asInt(json['key_id']),
+      displayName: json['display_name']?.toString() ?? 'Ключ #${json['key_id']}',
       expiresAt: json['expires_at'] != null
-          ? DateTime.tryParse(json['expires_at'])
+          ? DateTime.tryParse(json['expires_at'].toString())
           : null,
-      trafficUsed: json['traffic_used'] ?? 0,
-      trafficLimit: json['traffic_limit'] ?? 0,
+      trafficUsed: _asInt(json['traffic_used']),
+      trafficLimit: _asInt(json['traffic_limit']),
       isActive: json['is_active'] ?? true,
-      serverName: json['server_name'],
-      subUrl: json['sub_url'],
+      serverName: json['server_name']?.toString(),
+      subUrl: json['sub_url']?.toString(),
     );
   }
+
+  static int _asInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
 
   int? get daysLeft {
     if (expiresAt == null) return null;
@@ -204,17 +213,7 @@ class LinkCodeResponse {
   factory LinkCodeResponse.fromJson(Map<String, dynamic> json) {
     return LinkCodeResponse(
       ok: json['ok'] ?? false,
-      message: json['message'],
+      message: json['message']?.toString(),
     );
   }
-}
-
-class ApiException implements Exception {
-  final String message;
-  final String? code;
-
-  ApiException({required this.message, this.code});
-
-  @override
-  String toString() => message;
 }

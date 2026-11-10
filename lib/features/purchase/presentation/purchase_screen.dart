@@ -1,341 +1,694 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/api/tariffs_api.dart';
-import '../../../core/api/shop_api.dart';
-import '../../../core/api/promo_api.dart';
 
-/// Экран покупки подписки (аналог PurchaseActivity в Android)
+import '../../../core/api/api_exception.dart';
+import '../../../core/api/auth_api.dart';
+import '../../../core/api/shop_api.dart';
+import '../../../core/services/oauth_service.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/theme/app_theme.dart';
+
+enum _PurchaseState {
+  loginIdle,
+  loginLoading,
+  loadingTariffs,
+  tariffsList,
+  tariffsError,
+  creatingPayment,
+  waitingPayment,
+  renewWaitingPayment,
+  paymentFailed,
+  success,
+}
+
+/// Личный кабинет / покупка VPN.
+///
+/// - Вход по коду из бота, OAuth (Google/Yandex/VK)
+/// - Список ключей + продление
+/// - Тарифы + пробный период
+/// - Оплата через ЮKassa: открытие страницы оплаты в браузере + поллинг статуса
+/// - Привязка OAuth-аккаунта к боту (link-code)
 class PurchaseScreen extends StatefulWidget {
-  final int? keyId;
-  
-  const PurchaseScreen({super.key, this.keyId});
+  const PurchaseScreen({super.key});
 
   @override
   State<PurchaseScreen> createState() => _PurchaseScreenState();
 }
 
 class _PurchaseScreenState extends State<PurchaseScreen> {
-  final _tariffsApi = TariffsApi();
+  final _authApi = AuthApi();
   final _shopApi = ShopApi();
-  final _promoApi = PromoApi();
-  
-  List<Tariff> _tariffs = [];
-  Tariff? _selectedTariff;
-  bool _isLoading = true;
-  String? _error;
-  
-  final _promoController = TextEditingController();
-  bool _promoApplied = false;
-  String? _promoMessage;
+  final _codeController = TextEditingController();
+  final _linkCodeController = TextEditingController();
+
+  _PurchaseState _state = _PurchaseState.loginIdle;
+  String? _errorMessage;
+  List<AccountKeyDto> _keys = [];
+  List<TariffDto> _tariffs = [];
+  bool _trialAvailable = false;
+  bool _canLinkOauth = false;
+
+  String? _orderId;
+  String? _qrUrl;
+  double? _amountRub;
+  bool _polling = false;
 
   @override
   void initState() {
     super.initState();
-    _loadTariffs();
+    SessionService.loggedIn.addListener(_onSessionChanged);
+    _silentCheckSession();
   }
 
-  Future<void> _loadTariffs() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final tariffs = await _tariffsApi.getTariffs();
-      setState(() {
-        _tariffs = tariffs.where((t) => t.isActive).toList();
-        _isLoading = false;
-        if (_tariffs.isNotEmpty) {
-          _selectedTariff = _tariffs.first;
-        }
-      });
-    } catch (e) {
-      setState(() {
-        _error = 'Ошибка загрузки тарифов';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _applyPromoCode() async {
-    final code = _promoController.text.trim();
-    if (code.isEmpty) return;
-
-    try {
-      final result = await _promoApi.applyPromoCode(code);
-      setState(() {
-        _promoApplied = result.success;
-        _promoMessage = result.message;
-      });
-      
-      if (result.success) {
-        // Пересчитываем цену
-        _loadTariffs();
-      }
-    } catch (e) {
-      setState(() {
-        _promoApplied = false;
-        _promoMessage = 'Ошибка применения промокода';
-      });
-    }
-  }
-
-  Future<void> _buyTariff() async {
-    if (_selectedTariff == null) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final payment = await _shopApi.createPayment(
-        tariffId: _selectedTariff!.id,
-        keyId: widget.keyId,
-        promoCode: _promoApplied ? _promoController.text.trim() : null,
-      );
-
-      // Открываем страницу оплаты в браузере
-      if (payment.paymentUrl != null) {
-        final uri = Uri.parse(payment.paymentUrl!);
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        
-        // Показываем диалог ожидания оплаты
-        _showPaymentWaitingDialog(payment.paymentId);
-      }
-    } catch (e) {
-      setState(() {
-        _error = 'Ошибка создания платежа';
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _showPaymentWaitingDialog(String paymentId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _PaymentWaitingDialog(
-        paymentId: paymentId,
-        onComplete: () {
-          Navigator.pop(context);
-          Navigator.pop(context, true); // Возврат с результатом
-        },
-        onCancel: () {
-          Navigator.pop(context);
-          setState(() => _isLoading = false);
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Покупка подписки')),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(_error!, style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadTariffs,
-              child: const Text('Повторить'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Тарифы
-          Text(
-            'Выберите тариф',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          
-          ..._tariffs.map((tariff) => _TariffCard(
-            tariff: tariff,
-            isSelected: _selectedTariff?.id == tariff.id,
-            onSelect: () => setState(() => _selectedTariff = tariff),
-          )),
-          
-          const SizedBox(height: 24),
-          
-          // Промокод
-          _buildPromoCodeSection(),
-          
-          const SizedBox(height: 24),
-          
-          // Кнопка покупки
-          ElevatedButton(
-            onPressed: _selectedTariff == null ? null : _buyTariff,
-            child: Text(
-              _selectedTariff != null
-                  ? 'Купить за ${_selectedTariff!.priceFormatted}'
-                  : 'Выберите тариф',
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Информация
-          Text(
-            'После оплаты подписка активируется автоматически',
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPromoCodeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          'Промокод',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _promoController,
-                decoration: InputDecoration(
-                  hintText: 'Введите промокод',
-                  errorText: _promoApplied == false && _promoMessage != null
-                      ? _promoMessage
-                      : null,
-                  suffixIcon: _promoApplied
-                      ? const Icon(Icons.check_circle, color: AppTheme.success)
-                      : null,
-                ),
-                enabled: !_promoApplied,
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (!_promoApplied)
-              ElevatedButton(
-                onPressed: _applyPromoCode,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(80, 52),
-                ),
-                child: const Text('ОК'),
-              ),
-          ],
-        ),
-        if (_promoApplied && _promoMessage != null) ...[
-          const SizedBox(height: 8),
-          Text(
-            _promoMessage!,
-            style: const TextStyle(color: AppTheme.success),
-          ),
-        ],
-      ],
-    );
+  void _onSessionChanged() {
+    if (mounted) _silentCheckSession();
   }
 
   @override
   void dispose() {
-    _promoController.dispose();
+    SessionService.loggedIn.removeListener(_onSessionChanged);
+    _codeController.dispose();
+    _linkCodeController.dispose();
+    _polling = false;
     super.dispose();
   }
-}
 
-class _TariffCard extends StatelessWidget {
-  final Tariff tariff;
-  final bool isSelected;
-  final VoidCallback onSelect;
+  // ==================== ЛОГИКА ====================
 
-  const _TariffCard({
-    required this.tariff,
-    required this.isSelected,
-    required this.onSelect,
-  });
+  Future<void> _silentCheckSession() async {
+    try {
+      final session = await _authApi.getSession();
+      if (!mounted) return;
+      if (session != null && session.loggedIn) {
+        SessionService.setLoggedIn(true);
+        setState(() {
+          _keys = session.keys;
+          _canLinkOauth = session.canLinkOauth;
+        });
+        _loadTariffs();
+      } else {
+        SessionService.setLoggedIn(false);
+        setState(() => _state = _PurchaseState.loginIdle);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _state = _PurchaseState.loginIdle);
+    }
+  }
+
+  Future<void> _login() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _state = _PurchaseState.loginLoading;
+      _errorMessage = null;
+    });
+
+    try {
+      await _authApi.loginWithCode(code);
+      final session = await _authApi.getSession();
+      if (!mounted) return;
+      if (session != null && session.loggedIn) {
+        SessionService.setLoggedIn(true);
+        setState(() {
+          _keys = session.keys;
+          _canLinkOauth = session.canLinkOauth;
+        });
+        _loadTariffs();
+      } else {
+        setState(() {
+          _state = _PurchaseState.loginIdle;
+          _errorMessage = 'Сессия не создана';
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _PurchaseState.loginIdle;
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _PurchaseState.loginIdle;
+          _errorMessage = 'Ошибка сети';
+        });
+      }
+    }
+  }
+
+  Future<void> _oauthLogin(OAuthProvider provider) async {
+    setState(() {
+      _state = _PurchaseState.loginLoading;
+      _errorMessage = null;
+    });
+
+    try {
+      await OAuthService().signInWithProvider(provider);
+      final session = await _authApi.getSession();
+      if (!mounted) return;
+      if (session != null && session.loggedIn) {
+        SessionService.setLoggedIn(true);
+        setState(() {
+          _keys = session.keys;
+          _canLinkOauth = session.canLinkOauth;
+        });
+        _loadTariffs();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _PurchaseState.loginIdle;
+          _errorMessage = 'Ошибка OAuth: $e';
+        });
+      }
+    }
+  }
+
+  Future<void> _loadTariffs() async {
+    setState(() => _state = _PurchaseState.loadingTariffs);
+    try {
+      final resp = await _shopApi.getTariffs();
+      if (!mounted) return;
+      setState(() {
+        _tariffs = resp.tariffs;
+        _trialAvailable = resp.trialAvailable;
+        _state = _PurchaseState.tariffsList;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _PurchaseState.tariffsError;
+          _errorMessage = 'Не удалось загрузить тарифы';
+        });
+      }
+    }
+  }
+
+  Future<void> _createTrial() async {
+    setState(() => _state = _PurchaseState.creatingPayment);
+    try {
+      final resp = await _shopApi.createTrial();
+      if (!mounted) return;
+      if (resp.subUrl != null && resp.subUrl!.isNotEmpty) {
+        setState(() => _state = _PurchaseState.success);
+        await _silentCheckSession();
+      } else {
+        setState(() {
+          _state = _PurchaseState.paymentFailed;
+          _errorMessage =
+              resp.error ?? 'Не удалось активировать пробный период';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _PurchaseState.paymentFailed;
+          _errorMessage = 'Ошибка активации пробного периода';
+        });
+      }
+    }
+  }
+
+  Future<void> _createPayment(int tariffId) async {
+    setState(() => _state = _PurchaseState.creatingPayment);
+    try {
+      final resp = await _shopApi.createPayment(tariffId);
+      if (!mounted) return;
+      _orderId = resp.orderId;
+      _qrUrl = resp.qrUrl;
+      _amountRub = resp.amountRub;
+      setState(() => _state = _PurchaseState.waitingPayment);
+      _openPaymentPage();
+      _startPolling();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _PurchaseState.paymentFailed;
+          _errorMessage = e is ApiException ? e.message : 'Ошибка платежа';
+        });
+      }
+    }
+  }
+
+  Future<void> _createRenewal(int keyId) async {
+    setState(() => _state = _PurchaseState.creatingPayment);
+    try {
+      final resp = await _shopApi.createKeyRenewal(keyId);
+      if (!mounted) return;
+      _orderId = resp.orderId;
+      _qrUrl = resp.qrUrl;
+      _amountRub = resp.amountRub;
+      setState(() => _state = _PurchaseState.renewWaitingPayment);
+      _openPaymentPage();
+      _startPolling(isRenew: true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _state = _PurchaseState.paymentFailed;
+          _errorMessage = e is ApiException ? e.message : 'Ошибка продления';
+        });
+      }
+    }
+  }
+
+  Future<void> _openPaymentPage() async {
+    final url = _qrUrl;
+    if (url == null || url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  void _startPolling({bool isRenew = false}) {
+    final orderId = _orderId;
+    if (orderId == null || _polling) return;
+    _polling = true;
+
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted || !_polling) return false;
+
+      try {
+        final status = isRenew
+            ? (await _shopApi.checkKeyRenewal(orderId)).status
+            : (await _shopApi.checkPayment(orderId)).status;
+        if (!mounted) return false;
+
+        switch (status) {
+          case 'paid':
+            _polling = false;
+            setState(() => _state = _PurchaseState.success);
+            await _silentCheckSession();
+            return false;
+          case 'failed':
+            _polling = false;
+            setState(() {
+              _state = _PurchaseState.paymentFailed;
+              _errorMessage = isRenew ? 'Продление не прошло' : 'Платёж не прошёл';
+            });
+            return false;
+          default:
+            return true;
+        }
+      } catch (_) {
+        return mounted && _polling;
+      }
+    });
+  }
+
+  Future<void> _linkBotCode() async {
+    final code = _linkCodeController.text.trim();
+    if (code.isEmpty) return;
+
+    setState(() => _errorMessage = null);
+    try {
+      final resp = await _authApi.linkBotCode(code);
+      if (!mounted) return;
+      if (resp.ok) {
+        _linkCodeController.clear();
+        await _silentCheckSession();
+      } else {
+        setState(() => _errorMessage = resp.message ?? 'Не удалось привязать');
+      }
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = 'Ошибка сети');
+    }
+  }
+
+  Future<void> _logout() async {
+    _polling = false;
+    await _authApi.logout();
+    SessionService.setLoggedIn(false);
+    if (!mounted) return;
+    setState(() {
+      _keys = [];
+      _tariffs = [];
+      _codeController.clear();
+      _state = _PurchaseState.loginIdle;
+    });
+  }
+
+  // ==================== UI ====================
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onSelect,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary.withOpacity(0.1) : AppTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? AppTheme.primary : AppTheme.border,
-            width: isSelected ? 2 : 1,
+    return Scaffold(
+      backgroundColor: AppTheme.eclipseBlack,
+      appBar: AppBar(title: const Text('Личный кабинет')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: SingleChildScrollView(child: _buildContent()),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    switch (_state) {
+      case _PurchaseState.loginIdle:
+      case _PurchaseState.loginLoading:
+        return _buildLoginSection();
+      case _PurchaseState.loadingTariffs:
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: CircularProgressIndicator(color: AppTheme.goldAccent),
+          ),
+        );
+      case _PurchaseState.tariffsError:
+        return _buildError(_errorMessage ?? 'Ошибка', _loadTariffs);
+      case _PurchaseState.tariffsList:
+        return _buildTariffsSection();
+      case _PurchaseState.creatingPayment:
+        return const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: CircularProgressIndicator(color: AppTheme.goldAccent),
+          ),
+        );
+      case _PurchaseState.waitingPayment:
+      case _PurchaseState.renewWaitingPayment:
+        return _buildWaitingPayment(
+            isRenew: _state == _PurchaseState.renewWaitingPayment);
+      case _PurchaseState.paymentFailed:
+        return _buildError(_errorMessage ?? 'Ошибка платежа', _loadTariffs);
+      case _PurchaseState.success:
+        return _buildSuccess();
+    }
+  }
+
+  Widget _buildLoginSection() {
+    final isLoading = _state == _PurchaseState.loginLoading;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Введите код доступа из Telegram-бота или войдите через соцсети',
+          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _codeController,
+          decoration: const InputDecoration(
+            hintText: 'Код доступа',
+            prefixIcon: Icon(Icons.key, color: AppTheme.goldAccent),
+          ),
+          style: const TextStyle(color: AppTheme.textPrimary),
+          enabled: !isLoading,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _login(),
+        ),
+        if (_errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(color: AppTheme.errorRed, fontSize: 13),
+            ),
+          ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: ElevatedButton(
+            onPressed: isLoading ? null : _login,
+            child: isLoading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppTheme.eclipseBlack),
+                  )
+                : const Text('Войти'),
           ),
         ),
-        child: Row(
-          children: [
-            // Радио-кнопка
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
-                  width: 2,
+        const SizedBox(height: 20),
+        const Center(
+          child: Text('или',
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 13)),
+        ),
+        const SizedBox(height: 12),
+        _SocialButton(
+          icon: Icons.g_mobiledata,
+          label: 'Войти через Google',
+          onPressed: isLoading ? null : () => _oauthLogin(OAuthProvider.google),
+        ),
+        const SizedBox(height: 10),
+        _SocialButton(
+          icon: Icons.account_circle_outlined,
+          label: 'Войти через Яндекс',
+          onPressed: isLoading ? null : () => _oauthLogin(OAuthProvider.yandex),
+        ),
+        const SizedBox(height: 10),
+        _SocialButton(
+          icon: Icons.shield_outlined,
+          label: 'Войти через VK',
+          onPressed: isLoading ? null : () => _oauthLogin(OAuthProvider.vk),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTariffsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_keys.isNotEmpty) ...[
+          const Text(
+            'Ваши ключи',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ..._keys.map((k) => _KeyCard(
+                vpnKey: k,
+                onRenew: () => _createRenewal(k.keyId),
+              )),
+          const SizedBox(height: 8),
+        ],
+        if (_canLinkOauth) ...[
+          const Text(
+            'Привязать аккаунт бота',
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _linkCodeController,
+                  decoration: const InputDecoration(
+                    hintText: 'Код из бота',
+                    prefixIcon: Icon(Icons.link, color: AppTheme.goldAccent),
+                  ),
+                  style: const TextStyle(color: AppTheme.textPrimary),
                 ),
               ),
-              child: isSelected
-                  ? Center(
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 16),
-            
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tariff.name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${tariff.durationFormatted} • ${tariff.trafficLimitMb != null ? '${(tariff.trafficLimitMb! / 1024).toStringAsFixed(0)} ГБ' : 'Безлимит'}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: _linkBotCode,
+                  child: const Text('Привязать'),
+                ),
               ),
+            ],
+          ),
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_errorMessage!,
+                  style:
+                      const TextStyle(color: AppTheme.errorRed, fontSize: 13)),
             ),
-            
+          const SizedBox(height: 20),
+        ],
+        const Text(
+          'Выберите тариф',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        if (_trialAvailable) ...[
+          const SizedBox(height: 12),
+          _TrialCard(onTap: _createTrial),
+        ],
+        const SizedBox(height: 12),
+        ..._tariffs.map((t) => _TariffCard(
+              tariff: t,
+              onBuy: () => _createPayment(t.id),
+            )),
+        const SizedBox(height: 12),
+        Center(
+          child: TextButton(
+            onPressed: _logout,
+            child: const Text('Выйти',
+                style: TextStyle(color: AppTheme.textMuted)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWaitingPayment({bool isRenew = false}) {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        Text(
+          isRenew ? 'Ожидание продления' : 'Ожидание оплаты',
+          style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary),
+        ),
+        if (_amountRub != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '${_amountRub!.toInt()} ₽',
+              style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.goldAccent),
+            ),
+          ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: ElevatedButton(
+            onPressed: _openPaymentPage,
+            child: const Text('Открыть страницу оплаты'),
+        ),
+        ),
+        const SizedBox(height: 24),
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: AppTheme.goldAccent),
+            ),
+            SizedBox(width: 12),
             Text(
-              tariff.priceFormatted,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: AppTheme.primary,
-              ),
+              'Проверяем статус платежа...',
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
             ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        TextButton(
+          onPressed: () {
+            _polling = false;
+            _loadTariffs();
+          },
+          child: const Text('Отмена',
+              style: TextStyle(color: AppTheme.textMuted)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildError(String message, VoidCallback onRetry) {
+    return Column(
+      children: [
+        const SizedBox(height: 30),
+        Text(message,
+            style: const TextStyle(color: AppTheme.errorRed, fontSize: 16),
+            textAlign: TextAlign.center),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: OutlinedButton(
+            onPressed: onRetry,
+            child: const Text('Попробовать снова'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuccess() {
+    return Column(
+      children: [
+        const SizedBox(height: 30),
+        const Icon(Icons.check_circle, color: AppTheme.successGreen, size: 64),
+        const SizedBox(height: 16),
+        const Text(
+          'Готово!',
+          style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Подписка добавлена в ваш аккаунт.\nМожно подключаться к VPN.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 54,
+          child: ElevatedButton(
+            onPressed: _loadTariffs,
+            child: const Text('К моим ключам'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ==================== ВИДЖЕТЫ ====================
+
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _SocialButton(
+      {required this.icon, required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppTheme.goldAccent, width: 1.5),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 22, color: AppTheme.goldAccent),
+            const SizedBox(width: 10),
+            Text(label,
+                style: const TextStyle(fontSize: 15, color: AppTheme.goldAccent)),
           ],
         ),
       ),
@@ -343,92 +696,199 @@ class _TariffCard extends StatelessWidget {
   }
 }
 
-/// Диалог ожидания оплаты
-class _PaymentWaitingDialog extends StatefulWidget {
-  final String paymentId;
-  final VoidCallback onComplete;
-  final VoidCallback onCancel;
+class _KeyCard extends StatelessWidget {
+  final AccountKeyDto vpnKey;
+  final VoidCallback onRenew;
 
-  const _PaymentWaitingDialog({
-    required this.paymentId,
-    required this.onComplete,
-    required this.onCancel,
-  });
-
-  @override
-  State<_PaymentWaitingDialog> createState() => _PaymentWaitingDialogState();
-}
-
-class _PaymentWaitingDialogState extends State<_PaymentWaitingDialog> {
-  final _shopApi = ShopApi();
-  bool _isChecking = false;
-  String _status = 'waiting';
-
-  @override
-  void initState() {
-    super.initState();
-    _startChecking();
-  }
-
-  void _startChecking() {
-    // Проверяем статус каждые 3 секунды
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(seconds: 3));
-      
-      if (!mounted) return false;
-      
-      try {
-        final status = await _shopApi.checkPayment(widget.paymentId);
-        if (status.isCompleted) {
-          setState(() => _status = 'completed');
-          await Future.delayed(const Duration(seconds: 1));
-          widget.onComplete();
-          return false;
-        }
-      } catch (e) {
-        // Игнорируем ошибки проверки
-      }
-      
-      return mounted && _status == 'waiting';
-    });
-  }
+  const _KeyCard({required this.vpnKey, required this.onRenew});
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppTheme.surface,
-      title: const Text('Ожидание оплаты'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
+    final days = vpnKey.daysLeft;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        border: Border.all(color: AppTheme.cardBorder),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_status == 'waiting') ...[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            const Text('Завершите оплату в браузере...'),
-            const SizedBox(height: 8),
+          Text(
+            vpnKey.displayName,
+            style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary),
+          ),
+          if (vpnKey.serverName != null)
             Text(
-              'Окно можно свернуть, мы уведомим о результате',
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
+              vpnKey.serverName!,
+              style: const TextStyle(
+                  fontSize: 13, color: AppTheme.textSecondary),
             ),
-          ] else ...[
-            const Icon(
-              Icons.check_circle,
-              color: AppTheme.success,
-              size: 64,
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  days != null ? 'Осталось $days дн.' : 'Без срока',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: (days ?? 999) > 3
+                        ? AppTheme.successGreen
+                        : AppTheme.errorRed,
+                  ),
+                ),
+              ),
+              if (vpnKey.trafficLimitGb != null)
+                Text(
+                  '${vpnKey.trafficUsedGb.toStringAsFixed(1)} / '
+                  '${vpnKey.trafficLimitGb!.toStringAsFixed(0)} GB',
+                  style:
+                      const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton(
+              onPressed: onRenew,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppTheme.goldAccent),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child:
+                  const Text('Продлить', style: TextStyle(color: AppTheme.goldAccent)),
             ),
-            const SizedBox(height: 16),
-            const Text('Оплата прошла успешно!'),
-          ],
+          ),
         ],
       ),
-      actions: [
-        if (_status == 'waiting')
-          TextButton(
-            onPressed: widget.onCancel,
-            child: const Text('Отмена'),
+    );
+  }
+}
+
+class _TrialCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _TrialCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.goldAccent.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Пробный период',
+            style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.goldAccent),
           ),
-      ],
+          const SizedBox(height: 4),
+          const Text(
+            'Бесплатный доступ на 3 дня',
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              onPressed: onTap,
+              child: const Text('Активировать'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TariffCard extends StatelessWidget {
+  final TariffDto tariff;
+  final VoidCallback onBuy;
+
+  const _TariffCard({required this.tariff, required this.onBuy});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(20),
+        border: tariff.isCurrent
+            ? Border.all(color: AppTheme.goldAccent, width: 1.5)
+            : Border.all(color: AppTheme.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tariff.name,
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${tariff.durationDays} дн.'
+                  '${tariff.trafficLimitGb != null ? ' · ${tariff.trafficLimitGb!.toStringAsFixed(0)} GB' : ''}',
+                  style: const TextStyle(
+                      fontSize: 13, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                tariff.priceFormatted,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.goldAccent),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 36,
+                child: ElevatedButton(
+                  onPressed: onBuy,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    textStyle: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  child: const Text('Купить'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

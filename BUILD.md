@@ -3,118 +3,97 @@
 ## Требования
 
 - Windows 10/11 (64-bit)
-- Visual Studio 2022 с C++ workload
-- Flutter SDK 3.16+
-- sing-box v1.8.0+
+- Visual Studio 2022 или Build Tools с workload «Разработка классических приложений на C++»
+- Flutter SDK 3.24+ (stable)
+- sing-box 1.14.x (скачивается отдельно, см. ниже)
+- wintun 0.14.1
 
-## 1. Подготовка sing-box
+## 1. Подготовка sing-box и wintun
 
-Скачайте sing-box для Windows:
 ```powershell
 # PowerShell
-Invoke-WebRequest -Uri "https://github.com/SagerNet/sing-box/releases/latest/download/sing-box-1.8.0-windows-amd64.zip" -OutFile "sing-box.zip"
+Invoke-WebRequest -Uri "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-windows-amd64.zip" -OutFile "sing-box.zip"
 Expand-Archive -Path "sing-box.zip" -DestinationPath "."
+
+Invoke-WebRequest -Uri "https://www.wintun.net/builds/wintun-0.14.1.zip" -OutFile "wintun.zip"
+Expand-Archive -Path "wintun.zip" -DestinationPath "."
 ```
 
-Поместите `sing-box.exe` в папку `windows/runner/Release/` рядом с `eclipse_vpn_windows.exe`.
+Для запуска из IDE (`flutter run`) положите `sing-box.exe` и
+`wintun\bin\amd64\wintun.dll` в корень проекта рядом с точкой запуска
+(или в подпапку `sing-box/`). Приложение ищет их:
+
+1. рядом с `eclipse_vpn_windows.exe`
+2. в подпапке `sing-box/` рядом с exe
+3. в текущей директории и её подпапке `sing-box/`
+
+Для установщика CI кладёт их в `sing-box\sing-box.exe` и `wintun\wintun.dll`
+(см. `.github/workflows/build.yml` и `installer.iss`).
 
 ## 2. Сборка приложения
 
 ```bash
-# Установка зависимостей
 flutter pub get
-
-# Генерация кода (если используется retrofit/hive)
-flutter pub run build_runner build --delete-conflicting-outputs
-
-# Сборка релиза
+flutter analyze
+flutter test
 flutter build windows --release
 ```
 
-Готовый исполняемый файл будет в:
+Готовый исполняемый файл:
 ```
 build/windows/x64/runner/Release/eclipse_vpn_windows.exe
 ```
 
-## 3. Создание установщика (опционально)
+## 3. Создание установщика
 
-Используйте Inno Setup для создания установщика:
-
-```iss
-; installer.iss
-[Setup]
-AppName=ECLIPSE VPN
-AppVersion=0.1.0
-DefaultDirName={pf}\ECLIPSE VPN
-DefaultGroupName=ECLIPSE VPN
-OutputDir=installer
-
-[Files]
-Source: "build\windows\x64\runner\Release\eclipse_vpn_windows.exe"; DestDir: "{app}"
-Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: recursesubdirs
-Source: "sing-box\sing-box.exe"; DestDir: "{app}"
-
-[Icons]
-Name: "{group}\ECLIPSE VPN"; Filename: "{app}\eclipse_vpn_windows.exe"
-Name: "{commondesktop}\ECLIPSE VPN"; Filename: "{app}\eclipse_vpn_windows.exe"
+```powershell
+# Inno Setup 6
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 ```
+
+Результат: `installer\ECLIPSE_VPN_Setup_<версия>.exe`
+
+Установщик:
+- требует права администратора (нужны для TUN-адаптера)
+- кладёт sing-box.exe и wintun.dll рядом с приложением
+- добавляет правила фаервола для приложения и sing-box
+- проверяет наличие VC++ Redistributable 2015-2022 x64
+- опции: ярлык на рабочем столе, автозапуск
 
 ## 4. Настройка API
 
-Перед сборкой укажите домен вашего бота в файле:
-```
-lib/core/api/api_client.dart
-```
+Домен бота: `lib/core/api/api_client.dart` → `baseUrl`.
 
-Замените:
-```dart
-static const String baseUrl = 'https://ваш-домен.com';
-```
+## 5. CI/CD (GitHub Actions)
 
-## 5. Развертывание
+`.github/workflows/build.yml`:
+1. Flutter stable → `pub get` → `analyze --fatal-infos` → `test`
+2. Скачивает sing-box 1.14.4 и wintun 0.14.1 (amd64)
+3. `flutter build windows --release`
+4. Собирает установщик Inno Setup
+5. При пуше тега `v*` — публикует `.exe` в Releases
 
-### Требования на целевой машине:
-- Visual C++ Redistributable 2015-2022 x64
-- Права администратора (для создания TUN-адаптера)
+## Проверка конфига VPN вручную
 
-### Установка:
-1. Запустите установщик или распакуйте portable-версию
-2. При первом запуске Windows запросит права администратора — это необходимо для создания VPN-интерфейса
-3. Введите код доступа из Telegram-бота
+Формат конфига sing-box 1.11+ отличается от старого (1.8).
+Приложение валидирует конфиг командой `sing-box check` перед запуском.
+Проверить вручную:
 
-## Структура файлов после установки
-
-```
-ECLIPSE VPN/
-├── eclipse_vpn_windows.exe    # Основное приложение
-├── sing-box.exe               # VPN-ядро
-├── flutter_windows.dll          # Flutter runtime
-├── *.dll                      # Зависимости
-└── data/                      # Данные приложения
-    ├── app.so                 # Flutter код
-    └── icudtl.dat             # ICU данные
-```
-
-## Отладка
-
-Запуск с логами:
 ```powershell
-.\eclipse_vpn_windows.exe --verbose
+.\sing-box.exe check -c "%APPDATA%\...\sing-box\config.json"
 ```
 
-Логи sing-box сохраняются во временной папке:
-```
-%TEMP%\eclipse_vpn_config.json
-```
+## Требования на целевой машине
 
-## Примечания
-
-- **TUN-адаптер**: sing-box использует wintun.dll для создания виртуального сетевого адаптера. При первом запуске может появиться запрос на установку драйвера.
-- **Автозапуск**: Настраивается в настройках приложения (требует прав администратора).
-- **Файрвол**: Windows Defender может запросить разрешение для sing-box.exe — разрешите доступ.
+- Windows 10/11 x64
+- Visual C++ Redistributable 2015-2022 x64
+- Права администратора (TUN-адаптер)
+- При первом запуске sing-box скачает rule-set'ы (geoip-ru/geosite-ru) — нужен интернет
 
 ## Известные проблемы
 
-1. **"sing-box.exe не найден"** — убедитесь, что sing-box.exe в той же папке, что и основное приложение
-2. **Ошибка создания TUN** — запустите от имени администратора
+1. **«sing-box.exe не найден»** — файлы должны лежать рядом с приложением
+2. **«Нужны права администратора»** — перезапустите от имени администратора
 3. **Антивирус блокирует** — добавьте папку приложения в исключения
+4. **VPN не подключается** — откройте «Показать логи» на главном экране,
+   приложите их к обращению в поддержку (вкладка «Поддержка»)

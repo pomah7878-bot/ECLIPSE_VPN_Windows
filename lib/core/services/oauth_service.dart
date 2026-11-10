@@ -1,69 +1,73 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+
 import 'package:crypto/crypto.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../api/auth_api.dart';
+
 import '../api/api_client.dart';
+import '../api/auth_api.dart';
+import 'deeplink_service.dart';
 
-enum OAuthProvider {
-  google,
-  yandex,
-  vk,
-}
+enum OAuthProvider { google, yandex, vk }
 
-/// Сервис OAuth-авторизации.
+/// OAuth-авторизация через системный браузер — как в Android-приложении.
 ///
-/// Реализует PKCE (Proof Key for Code Exchange) как в Android:
-/// 1. Генерирует code_verifier (32 случайных байта, base64url)
-/// 2. Вычисляет code_challenge = SHA256(verifier), base64url
-/// 3. Открывает браузер с challenge
-/// 4. Получает code через локальный callback-сервер
-/// 5. Обменивает code + verifier на cookie-сессию
+/// 1. PKCE: code_verifier (32 байта, base64url), challenge = SHA256(verifier)
+/// 2. Браузер открывает GET {site}/auth/{provider}/start?client=app&code_challenge=...
+/// 3. Сервер после авторизации редиректит на eclipsevpn://oauth-callback?code=...
+///    (Windows передаёт URL второму экземпляру, тот пересылает первому
+///    через локальный порт — см. DeepLinkService)
+/// 4. POST /api/public/account/oauth-exchange {code, code_verifier} → cookie-сессия
 class OAuthService {
   final _authApi = AuthApi();
 
-  /// Запускает OAuth-поток через системный браузер
-  Future<SessionLoginResponse> signInWithProvider(OAuthProvider provider) async {
-    final providerName = _providerName(provider);
+  /// Номер текущего потока входа: запоздавший код чужого потока
+  /// (например, от закрытой вкладки Google) не будет использован молча.
+  static int _flowId = 0;
 
-    // PKCE: генерируем verifier и challenge
+  Future<SessionLoginResponse> signInWithProvider(OAuthProvider provider) async {
+    final flow = ++_flowId;
     final codeVerifier = _generateCodeVerifier();
     final codeChallenge = _generateCodeChallenge(codeVerifier);
 
-    // Запускаем локальный сервер для приёма callback
-    final callbackServer = await _startCallbackServer();
-    final callbackUrl = 'http://127.0.0.1:${callbackServer.port}/oauth-callback';
+    final startUrl = '${ApiClient.baseUrl}/auth/${_providerName(provider)}/start'
+        '?client=app'
+        '&code_challenge=$codeChallenge';
 
-    // Формируем URL авторизации
-    final fullUrl =
-        '${ApiClient.baseUrl}/api/public/account/oauth-exchange'
-        '?provider=$providerName'
-        '&redirect_uri=${Uri.encodeComponent(callbackUrl)}'
-        '&code_challenge=$codeChallenge'
-        '&code_challenge_method=S256';
+    // Код мог прийти ещё до подписки (запуск приложения по deep-link)
+    final pending = DeepLinkService.instance.takePendingCode();
+    final codeFuture = pending != null
+        ? Future.value(pending)
+        : DeepLinkService.instance.codes.first;
+
+    final uri = Uri.parse(startUrl);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      throw Exception('Не удалось открыть браузер');
+    }
+
+    final authCode = await codeFuture.timeout(
+      const Duration(minutes: 3),
+      onTimeout: () => throw Exception('Время ожидания авторизации истекло'),
+    );
+
+    if (flow != _flowId) {
+      throw Exception('Попытка входа прервана новым запросом. Повторите вход.');
+    }
 
     try {
-      // Открываем браузер
-      final uri = Uri.parse(fullUrl);
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        throw Exception('Не удалось открыть браузер');
-      }
-
-      // Ждём callback от браузера
-      final authCode = await callbackServer.waitForCode(
-        timeout: const Duration(minutes: 2),
-      );
-
-      // Обмениваем код на сессию
       return await _authApi.exchangeOAuthCode(
         code: authCode,
         codeVerifier: codeVerifier,
       );
-    } finally {
-      await callbackServer.close();
+    } catch (e) {
+      // Код мог прийти от другой вкладки/провайдера — объясняем человечно
+      throw Exception(
+        'Не удалось завершить вход: код авторизации не подошёл, '
+        'устарел или уже использован.\nЗакройте лишние вкладки браузера '
+        'и попробуйте ещё раз.',
+      );
     }
   }
 
@@ -78,7 +82,6 @@ class OAuthService {
     }
   }
 
-  /// Генерирует PKCE code_verifier — 32 случайных байта в base64url
   String _generateCodeVerifier() {
     final bytes = Uint8List(32);
     final random = Random.secure();
@@ -88,85 +91,8 @@ class OAuthService {
     return base64Url.encode(bytes).replaceAll('=', '');
   }
 
-  /// Вычисляет PKCE code_challenge = SHA256(verifier) в base64url
   String _generateCodeChallenge(String verifier) {
-    final bytes = utf8.encode(verifier);
-    final digest = sha256.convert(bytes);
+    final digest = sha256.convert(utf8.encode(verifier));
     return base64Url.encode(digest.bytes).replaceAll('=', '');
-  }
-
-  Future<_CallbackServer> _startCallbackServer() async {
-    return _CallbackServer.start();
-  }
-}
-
-/// Локальный HTTP-сервер для приёма OAuth callback
-class _CallbackServer {
-  final HttpServer _server;
-  final _codeCompleter = Completer<String>();
-
-  _CallbackServer._(this._server);
-
-  static Future<_CallbackServer> start() async {
-    final server = await HttpServer.bind('127.0.0.1', 0); // Случайный порт
-    final instance = _CallbackServer._(server);
-    instance._listen();
-    return instance;
-  }
-
-  int get port => _server.port;
-
-  void _listen() async {
-    await for (final request in _server) {
-      final uri = request.uri;
-
-      if (uri.path == '/oauth-callback') {
-        final code = uri.queryParameters['code'];
-        final error = uri.queryParameters['error'];
-
-        if (code != null && !_codeCompleter.isCompleted) {
-          _codeCompleter.complete(code);
-        } else if (error != null && !_codeCompleter.isCompleted) {
-          _codeCompleter.completeError(Exception('OAuth error: $error'));
-        }
-
-        // Отправляем ответ браузеру
-        request.response
-          ..statusCode = 200
-          ..headers.contentType = ContentType.html
-          ..write('''
-            <!DOCTYPE html>
-            <html>
-            <head><title>ECLIPSE VPN</title></head>
-            <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #0a0a0f; color: white;">
-              <div style="text-align: center;">
-                <h1 style="color: #ffb800;">✓ Авторизация успешна</h1>
-                <p>Можете закрыть это окно и вернуться в приложение.</p>
-              </div>
-            </body>
-            </html>
-          ''');
-        await request.response.close();
-      } else {
-        request.response
-          ..statusCode = 404
-          ..write('Not found');
-        await request.response.close();
-      }
-    }
-  }
-
-  Future<String> waitForCode({Duration? timeout}) async {
-    if (timeout != null) {
-      return _codeCompleter.future.timeout(
-        timeout,
-        onTimeout: () => throw Exception('Время ожидания авторизации истекло'),
-      );
-    }
-    return _codeCompleter.future;
-  }
-
-  Future<void> close() async {
-    await _server.close(force: true);
   }
 }

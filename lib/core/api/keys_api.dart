@@ -1,37 +1,58 @@
-import 'package:dio/dio.dart';
 import 'api_client.dart';
+import 'api_exception.dart';
 
+/// API ключей: список inbound-конфигов для подключения.
 class KeysApi {
   final _client = ApiClient();
 
-  Future<List<VpnKey>> getKeys() async {
-    final response = await _client.dio.get('/keys');
-    if (response.statusCode == 200) {
-      final data = _extractList(response.data, 'keys');
-      return data.map((e) => VpnKey.fromJson(e)).toList();
-    } else {
-      throw _ApiException(message: 'Ошибка загрузки ключей');
-    }
-  }
-
+  /// GET /key/{id}/inbounds
   Future<List<KeyInbound>> getKeyInbounds(int keyId) async {
     final response = await _client.dio.get('/key/$keyId/inbounds');
     if (response.statusCode == 200) {
-      final data = _extractList(response.data, 'inbounds');
-      return data.map((e) => KeyInbound.fromJson(e)).toList();
-    } else {
-      throw _ApiException(message: 'Ошибка загрузки подключений');
+      return _extractList(response.data, 'inbounds')
+          .whereType<Map<String, dynamic>>()
+          .map(KeyInbound.fromJson)
+          .toList();
     }
+    throw ApiException(message: 'Ошибка загрузки подключений');
   }
 
+  /// GET /public/key/{id}/inbounds
   Future<List<KeyInbound>> getPublicKeyInbounds(int keyId) async {
     final response = await _client.dio.get('/public/key/$keyId/inbounds');
     if (response.statusCode == 200) {
-      final data = _extractList(response.data, 'inbounds');
-      return data.map((e) => KeyInbound.fromJson(e)).toList();
-    } else {
-      throw _ApiException(message: 'Ошибка загрузки подключений');
+      return _extractList(response.data, 'inbounds')
+          .whereType<Map<String, dynamic>>()
+          .map(KeyInbound.fromJson)
+          .toList();
     }
+    throw ApiException(message: 'Ошибка загрузки подключений');
+  }
+
+  /// POST /public/account/key/devices — устройства ключа (как в Android).
+  Future<KeyDevicesResponse> getKeyDevices(int keyId) async {
+    final response = await _client.dio.post(
+      '/public/account/key/devices',
+      data: {'key_id': keyId},
+    );
+    if (response.statusCode == 200) {
+      return KeyDevicesResponse.fromJson(response.data);
+    }
+    throw ApiException(message: 'Ошибка загрузки устройств');
+  }
+
+  /// POST /public/account/key/device_disconnect — освободить слот устройства.
+  /// Возвращает null при успехе или текст ошибки.
+  Future<String?> disconnectDevice(int keyId, Object deviceId) async {
+    final response = await _client.dio.post(
+      '/public/account/key/device_disconnect',
+      data: {'key_id': keyId, 'device_id': deviceId},
+    );
+    if (response.statusCode == 200 && response.data['status'] == 'ok') {
+      return null;
+    }
+    final msg = response.data['message']?.toString() ?? '';
+    return msg.isEmpty ? 'Не удалось отключить устройство' : msg;
   }
 
   /// Безопасно извлекает List из ответа сервера.
@@ -47,79 +68,125 @@ class KeysApi {
   }
 }
 
-class VpnKey {
-  final int id;
-  final String name;
-  final String? serverName;
-  final String? protocol;
-  final DateTime? expiryDate;
-  final bool isActive;
-  final int? trafficUsedMb;
-  final int? trafficLimitMb;
-
-  VpnKey({
-    required this.id,
-    required this.name,
-    this.serverName,
-    this.protocol,
-    this.expiryDate,
-    required this.isActive,
-    this.trafficUsedMb,
-    this.trafficLimitMb,
-  });
-
-  factory VpnKey.fromJson(Map<String, dynamic> json) {
-    return VpnKey(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Ключ #${json['id']}',
-      serverName: json['server_name'] ?? json['server'],
-      protocol: json['protocol'],
-      expiryDate: json['expiry_date'] != null
-          ? DateTime.tryParse(json['expiry_date'])
-          : null,
-      isActive: json['is_active'] ?? true,
-      trafficUsedMb: json['traffic_used_mb'],
-      trafficLimitMb: json['traffic_limit_mb'],
-    );
-  }
-
-  int? get daysLeft {
-    if (expiryDate == null) return null;
-    return expiryDate!.difference(DateTime.now()).inDays;
-  }
-}
-
+/// Один inbound сервера (протокол + ссылка-конфиг).
 class KeyInbound {
   final int id;
   final String protocol;
   final String? link;
   final String? config;
-  final String? qrCode;
+  final String? remark;
 
   KeyInbound({
     required this.id,
     required this.protocol,
     this.link,
     this.config,
-    this.qrCode,
+    this.remark,
   });
 
   factory KeyInbound.fromJson(Map<String, dynamic> json) {
     return KeyInbound(
-      id: json['id'] ?? 0,
-      protocol: json['protocol'] ?? 'unknown',
-      link: json['link'] ?? json['url'],
-      config: json['config'],
-      qrCode: json['qr_code'],
+      id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}') ?? 0,
+      protocol: json['protocol']?.toString() ?? 'unknown',
+      link: (json['link'] ?? json['url'])?.toString(),
+      config: json['config']?.toString(),
+      remark: (json['remark'] ?? json['name'])?.toString(),
     );
   }
 }
 
-class _ApiException implements Exception {
-  final String message;
+/// Ответ /public/account/key/devices.
+class KeyDevicesResponse {
+  final int currentCount;
+  final int maxDevices;
+  final List<DeviceDto> devices;
 
-  _ApiException({required this.message});
+  KeyDevicesResponse({
+    required this.currentCount,
+    required this.maxDevices,
+    required this.devices,
+  });
 
-  @override
-  String toString() => message;
+  factory KeyDevicesResponse.fromJson(Map<String, dynamic> json) {
+    final raw = json['devices'];
+    final list = raw is List ? raw : const <dynamic>[];
+    return KeyDevicesResponse(
+      currentCount: _asInt(json['current_count']),
+      maxDevices: _asInt(json['max_devices']),
+      devices: list
+          .whereType<Map<String, dynamic>>()
+          .map(DeviceDto.fromJson)
+          .toList(),
+    );
+  }
+
+  static int _asInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
+
+  String get counterText =>
+      maxDevices > 0 ? '$currentCount из $maxDevices' : '$currentCount';
+}
+
+/// Одно устройство ключа.
+class DeviceDto {
+  final String model;
+  final String os;
+  final String osVersion;
+  final String ip;
+  final String lastSeen;
+  final String firstSeen;
+  final dynamic deviceId;
+
+  DeviceDto({
+    required this.model,
+    required this.os,
+    required this.osVersion,
+    required this.ip,
+    required this.lastSeen,
+    required this.firstSeen,
+    this.deviceId,
+  });
+
+  factory DeviceDto.fromJson(Map<String, dynamic> json) {
+    return DeviceDto(
+      model: json['model']?.toString() ?? '',
+      os: json['os']?.toString() ?? '',
+      osVersion: json['os_version']?.toString() ?? '',
+      ip: json['ip']?.toString() ?? '',
+      lastSeen: json['last_seen']?.toString() ?? '',
+      firstSeen: json['first_seen']?.toString() ?? '',
+      deviceId: json['device_id'],
+    );
+  }
+
+  bool get canDisconnect => deviceId != null;
+
+  String get title {
+    for (final v in [model, os, ip]) {
+      if (v.isNotEmpty) return v;
+    }
+    return 'Устройство';
+  }
+
+  String get info {
+    final osFull = '$os $osVersion'.trim();
+    final seen = formatSeen(lastSeen.isNotEmpty ? lastSeen : firstSeen);
+    final parts = <String>[
+      if (osFull.isNotEmpty && osFull != title) osFull,
+      if (seen.isNotEmpty) 'был в сети $seen',
+    ];
+    return parts.join(' • ');
+  }
+
+  /// Метки времени панели приходят в unix-секундах (или мс); остальное — как есть.
+  static String formatSeen(String raw) {
+    if (raw.isEmpty) return '';
+    final v = int.tryParse(raw.trim());
+    if (v == null) return raw;
+    var ms = v;
+    if (ms < 100000000000) ms *= 1000;
+    final dt = DateTime.fromMillisecondsSinceEpoch(ms);
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(dt.day)}.${two(dt.month)}.${dt.year}, '
+        '${two(dt.hour)}:${two(dt.minute)}';
+  }
 }

@@ -1,171 +1,294 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
+
+import '../../../core/api/api_exception.dart';
 import '../../../core/api/auth_api.dart';
 import '../../../core/services/oauth_service.dart';
-import '../../../core/services/tray_service.dart';
-import '../../home/presentation/home_screen.dart';
-import 'oauth_buttons.dart';
+import '../../../core/services/session_service.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/eclipse_logo.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+/// Содержимое экрана входа — по Android-приложению:
+/// логотип затмения, ECLIPSE / Unlimited, подзаголовок,
+/// две золотые пилюли (Google / Яндекс), две контурные (код бота / телефон),
+/// серая подсказка. Нижняя навигация рисуется оболочкой MainScreen.
+class LoginContent extends StatefulWidget {
+  final VoidCallback onLoggedIn;
+
+  const LoginContent({super.key, required this.onLoggedIn});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginContent> createState() => _LoginContentState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginContentState extends State<LoginContent> {
   final _codeController = TextEditingController();
   final _authApi = AuthApi();
   final _oauthService = OAuthService();
-  final _trayService = TrayService();
   bool _isLoading = false;
-  String? _error;
-
-  Future<void> _login() async {
-    final code = _codeController.text.trim();
-    if (code.isEmpty) {
-      setState(() => _error = 'Введите код доступа');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final result = await _authApi.loginWithCode(code);
-      
-      if (result.ok && mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(trayService: _trayService),
-          ),
-        );
-      }
-    } on ApiException catch (e) {
-      setState(() => _error = e.message);
-    } catch (e) {
-      setState(() => _error = 'Ошибка соединения. Проверьте интернет.');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _signInWithOAuth(OAuthProvider provider) async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final result = await _oauthService.signInWithProvider(provider);
-      
-      if (result.ok && mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => HomeScreen(trayService: _trayService),
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(flex: 2),
-              
-              // Логотип
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.shield_outlined,
-                    size: 50,
-                    color: AppTheme.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Заголовок
-              Text(
-                'ECLIPSE VPN',
-                style: Theme.of(context).textTheme.headlineLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Введите код доступа из бота',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-              
-              // Поле ввода
-              TextField(
-                controller: _codeController,
-                decoration: InputDecoration(
-                  hintText: 'Код доступа',
-                  errorText: _error,
-                  prefixIcon: const Icon(Icons.key_outlined),
-                ),
-                onSubmitted: (_) => _login(),
-              ),
-              const SizedBox(height: 24),
-              
-              // Кнопка входа
-              ElevatedButton(
-                onPressed: _isLoading ? null : _login,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Войти'),
-              ),
-              
-              // OAuth-кнопки
-              OAuthButtons(
-                onSignIn: _signInWithOAuth,
-                isLoading: _isLoading,
-              ),
-              
-              const Spacer(flex: 3),
-              
-              // Подсказка
-              Text(
-                'Код можно получить в Telegram-боте',
-                style: Theme.of(context).textTheme.labelSmall,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  String? _errorMessage;
 
   @override
   void dispose() {
     _codeController.dispose();
     super.dispose();
+  }
+
+  void _finishLogin() {
+    SessionService.setLoggedIn(true);
+    widget.onLoggedIn();
+  }
+
+  Future<void> _loginWithCode() async {
+    final code = _codeController.text.trim();
+    if (code.isEmpty) {
+      setState(() => _errorMessage = 'Введите код доступа');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _authApi.loginWithCode(code);
+      if (!mounted) return;
+      _finishLogin();
+    } on ApiException catch (e) {
+      setState(() => _errorMessage = e.message);
+    } catch (e) {
+      setState(() => _errorMessage = 'Ошибка сети. Проверьте подключение.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loginWithOAuth(OAuthProvider provider) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _oauthService.signInWithProvider(provider);
+      if (!mounted) return;
+      _finishLogin();
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = 'Ошибка авторизации: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showPhoneNotice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Вход по номеру телефона — в разработке'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showCodeDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: const BorderSide(color: AppTheme.cardBorder),
+        ),
+        title: const Text(
+          'Код из Telegram-бота',
+          style: TextStyle(
+              color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: _codeController,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Введите код',
+            prefixIcon: Icon(Icons.key, color: AppTheme.goldAccent),
+          ),
+          style: const TextStyle(color: AppTheme.textPrimary),
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) {
+            Navigator.pop(ctx);
+            _loginWithCode();
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена',
+                style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _loginWithCode();
+            },
+            child: const Text('Войти'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.eclipseBlack,
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Column(
+              children: [
+                const EclipseLogo(size: 150),
+                const SizedBox(height: 12),
+                const Text(
+                  'ECLIPSE',
+                  style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 6,
+                    color: AppTheme.goldAccent,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Unlimited',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.goldAccent,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'VPN без сложных настроек',
+                  style: TextStyle(fontSize: 15, color: AppTheme.textPrimary),
+                ),
+                const SizedBox(height: 32),
+                _PillButton(
+                  label: 'Войти через Google',
+                  gold: true,
+                  onPressed: _isLoading
+                      ? null
+                      : () => _loginWithOAuth(OAuthProvider.google),
+                ),
+                const SizedBox(height: 14),
+                _PillButton(
+                  label: 'Войти через Яндекс',
+                  gold: true,
+                  onPressed: _isLoading
+                      ? null
+                      : () => _loginWithOAuth(OAuthProvider.yandex),
+                ),
+                const SizedBox(height: 14),
+                _PillButton(
+                  label: 'Код из Telegram-бота',
+                  gold: false,
+                  onPressed: _isLoading ? null : _showCodeDialog,
+                ),
+                const SizedBox(height: 14),
+                _PillButton(
+                  label: 'Войти по номеру телефона',
+                  gold: false,
+                  onPressed: _isLoading ? null : _showPhoneNotice,
+                ),
+                const SizedBox(height: 18),
+                if (_isLoading)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: AppTheme.goldAccent),
+                    ),
+                  ),
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      _errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          color: AppTheme.errorRed, fontSize: 13),
+                    ),
+                  ),
+                const Text(
+                  'Уже покупали через бота? Войдите кодом из бота —\nподписка и баланс подтянутся.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Пилюля-кнопка как в Android: золотой градиент с тёмным текстом
+/// или контур с золотой рамкой и белым текстом.
+class _PillButton extends StatelessWidget {
+  final String label;
+  final bool gold;
+  final VoidCallback? onPressed;
+
+  const _PillButton({
+    required this.label,
+    required this.gold,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (gold) {
+      return SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppTheme.goldGradient,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              foregroundColor: AppTheme.eclipseBlack,
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: const StadiumBorder(),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      );
+    }
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppTheme.textPrimary,
+          side: const BorderSide(color: AppTheme.goldAccent, width: 1.5),
+          shape: const StadiumBorder(),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
   }
 }

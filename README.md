@@ -1,22 +1,26 @@
 # ECLIPSE VPN для Windows
 
-Кроссплатформенный VPN-клиент на Flutter + sing-box.
+Нативный VPN-клиент на Flutter + sing-box.
 
 ## Особенности
 
 - 🖥️ Нативное Windows-приложение (Flutter Desktop)
-- 🔒 Поддержка VLESS/Reality, Hysteria2
-- 📱 Интеграция с Telegram-ботом ECLIPSE_VPN
-- 🎨 Фирменный тёмный дизайн
-- 📊 Статистика трафика в реальном времени
+- 🔒 Поддержка VLESS/Reality, VMESS, Trojan, Hysteria2
+- 📱 Интеграция с Telegram-ботом @EclipseVPNBot
+- 🎨 Фирменный тёмный дизайн (как в Android-приложении)
+- 📊 Реальная статистика трафика и пинга (счётчики TUN-адаптера)
+- 🌐 Три режима маршрутизации: Умный / Белые списки / Как у всех
+- 🔔 Иконка в трее: управление подключением, сворачивание окна
+- 💳 Покупка и продление ключей в приложении (ЮKassa)
+- 🔑 Сессия сохраняется между запусками (persistent cookies)
 - 🔄 Автоимпорт конфигураций из API
 
 ## Архитектура
 
 ```
 Flutter UI (Dart)
-    ↓ HTTP API
-ECLIPSE_VPN Bot (Python/aiohttp)
+    ↓ HTTP API (cookie-сессия, X-Eclipse-App: 1)
+ECLIPSE_VPN Bot (eclipse.unlimited.bot.nu)
     ↓
 3x-ui/Xray Panel
 ```
@@ -24,39 +28,40 @@ ECLIPSE_VPN Bot (Python/aiohttp)
 ```
 Flutter App (Windows)
     ↓ Process API
-sing-box.exe (TUN/VPN)
+sing-box.exe 1.14.x (TUN через wintun.dll)
 ```
 
 ## Быстрый старт
 
 ### Для пользователей
 
-1. Скачайте последний релиз из [Releases](../../releases)
-2. Установите или распакуйте portable-версию
-3. Запустите ECLIPSE VPN (права администратора)
-4. Введите код доступа из Telegram-бота
-5. Выберите сервер и нажмите "Подключиться"
+1. Скачайте установщик из [Releases](../../releases)
+2. Запустите установку (потребуются права администратора)
+3. Войдите кодом из Telegram-бота или через Google/Яндекс
+4. Нажмите «Подключить»
 
 ### Для разработчиков
 
+Требуется: Flutter SDK 3.24+, Visual Studio 2022/Build Tools (C++ workload).
+
 ```bash
-# Клонирование
 git clone https://github.com/pomah7878-bot/ECLIPSE_VPN_Windows.git
 cd ECLIPSE_VPN_Windows
 
-# Установка зависимостей
 flutter pub get
+flutter analyze
+flutter test
 
-# Запуск в debug-режиме
+# sing-box.exe + wintun.dll должны лежать рядом с запускаемым exe
+# (или в подпапке sing-box/ от текущей директории)
 flutter run -d windows
-
-# Сборка релиза
-flutter build windows --release
 ```
+
+Сборка релиза и установщика — см. [BUILD.md](BUILD.md).
 
 ## Настройка API
 
-Укажите домен вашего бота в `lib/core/api/api_client.dart`:
+Домен бота задаётся в `lib/core/api/api_client.dart`:
 
 ```dart
 static const String baseUrl = 'https://your-domain.com';
@@ -66,39 +71,39 @@ static const String baseUrl = 'https://your-domain.com';
 
 ```
 lib/
+├── main.dart                  # Точка входа: окно, сервисы, сессия
 ├── core/
-│   ├── api/           # API клиенты (auth, keys, tariffs)
-│   ├── models/        # Модели данных
-│   ├── services/      # Сервисы (auth, storage)
-│   └── theme/         # Тема приложения
-├── features/
-│   ├── auth/          # Авторизация
-│   ├── home/          # Главный экран
-│   ├── connection/    # VPN-подключение
-│   │   ├── presentation/
-│   │   └── services/  # sing-box интеграция
-│   └── keys/          # Управление ключами
-└── main.dart          # Точка входа
+│   ├── api/                   # api_client, auth_api, keys_api, shop_api
+│   ├── services/              # vpn_service, config_generator, oauth, tray, settings
+│   └── theme/                 # Тёмная тема ECLIPSE
+└── features/
+    ├── auth/                  # Экран входа (код бота + OAuth PKCE)
+    ├── shell/                 # Главная оболочка с навигацией
+    ├── home/                  # Кнопка питания, статус, статистика
+    ├── modes/                 # Режимы маршрутизации
+    ├── purchase/              # Личный кабинет, тарифы, оплата
+    ├── devices/               # Ключи и устройства
+    └── support/               # Поддержка, логи, версия
 ```
 
-## Зависимости
+## Ключевые зависимости
 
-- **Flutter** — UI фреймворк
-- **sing-box** — VPN-ядро (Go)
-- **dio** — HTTP клиент
-- **window_manager** — управление окном
-- **shared_preferences** — локальное хранение
+- **sing-box 1.14.x** — VPN-ядро (конфиг нового формата, rule-set'ы подгружаются удалённо, локальные geoip.db/geosite.db не нужны)
+- **wintun 0.14.1** — драйвер TUN-адаптера
+- **dio + cookie_jar** — HTTP с сохранением сессии между запусками
+- **window_manager / tray_manager / launch_at_startup** — окно, трей, автозапуск
 
 ## CI/CD
 
-GitHub Actions автоматически собирает установщик при создании тега `v*`:
+GitHub Actions собирает установщик при создании тега `v*`
+(перед сборкой выполняются `flutter analyze` и `flutter test`):
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
-Готовый .exe будет в Releases.
+Готовый `ECLIPSE_VPN_Setup_*.exe` появится в Releases.
 
 ## Лицензия
 

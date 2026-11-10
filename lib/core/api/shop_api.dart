@@ -1,44 +1,30 @@
-import 'package:dio/dio.dart';
 import 'api_client.dart';
+import 'api_exception.dart';
 
-/// API для магазина — тарифы, пробный период, платежи, продление ключей.
+/// Магазин: тарифы, пробный период, платежи ЮKassa, продление ключей.
 ///
-/// Полностью совместим с Android ShopApiClient.
+/// Совместимо с Android ShopApiClient.
 class ShopApi {
   final _client = ApiClient();
 
-  // ==================== ТАРИФЫ ====================
-
-  /// Список тарифов.
   /// GET /public/tariffs
   Future<TariffsResponse> getTariffs() async {
     final response = await _client.dio.get('/public/tariffs');
     if (response.statusCode == 200) {
       return TariffsResponse.fromJson(response.data);
-    } else {
-      throw _ApiException(message: 'Ошибка загрузки тарифов');
     }
+    throw ApiException(message: 'Ошибка загрузки тарифов');
   }
 
-  // ==================== ПРОБНЫЙ ПЕРИОД ====================
-
-  /// Активирует бесплатный пробный период.
   /// POST /public/trial/create
   Future<TrialCreateResponse> createTrial() async {
-    final response = await _client.dio.post(
-      '/public/trial/create',
-      data: {},
-    );
+    final response = await _client.dio.post('/public/trial/create', data: {});
     if (response.statusCode == 200) {
       return TrialCreateResponse.fromJson(response.data);
-    } else {
-      throw _ApiException(message: 'Ошибка создания пробного периода');
     }
+    throw ApiException(message: 'Ошибка создания пробного периода');
   }
 
-  // ==================== ПЛАТЕЖИ ====================
-
-  /// Создаёт платёж ЮKassa за выбранный тариф.
   /// POST /public/pay/create
   Future<PayCreateResponse> createPayment(int tariffId) async {
     final response = await _client.dio.post(
@@ -48,15 +34,13 @@ class ShopApi {
     if (response.statusCode == 200) {
       final parsed = PayCreateResponse.fromJson(response.data);
       if (parsed.orderId == null) {
-        throw _ApiException(message: parsed.error ?? 'Не удалось создать платёж');
+        throw ApiException(message: parsed.error ?? 'Не удалось создать платёж');
       }
       return parsed;
-    } else {
-      throw _ApiException(message: 'Ошибка создания платежа');
     }
+    throw ApiException(message: 'Ошибка создания платежа');
   }
 
-  /// Проверяет статус платежа.
   /// POST /public/pay/check
   Future<PayCheckResponse> checkPayment(String orderId) async {
     final response = await _client.dio.post(
@@ -65,14 +49,10 @@ class ShopApi {
     );
     if (response.statusCode == 200) {
       return PayCheckResponse.fromJson(response.data);
-    } else {
-      throw _ApiException(message: 'Ошибка проверки платежа');
     }
+    throw ApiException(message: 'Ошибка проверки платежа');
   }
 
-  // ==================== ПРОДЛЕНИЕ КЛЮЧА ====================
-
-  /// Создаёт платёж для продления существующего ключа.
   /// POST /public/account/key/renew/create
   Future<KeyRenewCreateResponse> createKeyRenewal(int keyId) async {
     final response = await _client.dio.post(
@@ -82,15 +62,13 @@ class ShopApi {
     if (response.statusCode == 200) {
       final parsed = KeyRenewCreateResponse.fromJson(response.data);
       if (parsed.error != null) {
-        throw _ApiException(message: parsed.message ?? parsed.error!);
+        throw ApiException(message: parsed.message ?? parsed.error!);
       }
       return parsed;
-    } else {
-      throw _ApiException(message: 'Ошибка создания продления');
     }
+    throw ApiException(message: 'Ошибка создания продления');
   }
 
-  /// Проверяет статус продления.
   /// POST /public/account/key/renew/check
   Future<KeyRenewCheckResponse> checkKeyRenewal(String orderId) async {
     final response = await _client.dio.post(
@@ -99,9 +77,8 @@ class ShopApi {
     );
     if (response.statusCode == 200) {
       return KeyRenewCheckResponse.fromJson(response.data);
-    } else {
-      throw _ApiException(message: 'Ошибка проверки продления');
     }
+    throw ApiException(message: 'Ошибка проверки продления');
   }
 }
 
@@ -114,16 +91,17 @@ class TariffsResponse {
   TariffsResponse({required this.tariffs, required this.trialAvailable});
 
   factory TariffsResponse.fromJson(Map<String, dynamic> json) {
+    final raw = json['tariffs'];
+    final list = raw is List
+        ? raw
+        : (raw is Map ? [raw] : const <dynamic>[]);
     return TariffsResponse(
-      tariffs: _parseList(json['tariffs']).map((e) => TariffDto.fromJson(e)).toList(),
+      tariffs: list
+          .whereType<Map<String, dynamic>>()
+          .map(TariffDto.fromJson)
+          .toList(),
       trialAvailable: json['trial_available'] ?? false,
     );
-  }
-
-  static List<dynamic> _parseList(dynamic value) {
-    if (value is List) return value;
-    if (value is Map) return [value];
-    return [];
   }
 }
 
@@ -146,17 +124,24 @@ class TariffDto {
 
   factory TariffDto.fromJson(Map<String, dynamic> json) {
     return TariffDto(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? 'Тариф',
-      durationDays: json['duration_days'] ?? 30,
-      priceRub: (json['price_rub'] ?? 0).toDouble(),
-      trafficLimitGb: json['traffic_limit_gb']?.toDouble(),
+      id: _asInt(json['id']),
+      name: json['name']?.toString() ?? 'Тариф',
+      durationDays: _asInt(json['duration_days'], 30),
+      priceRub: _asDouble(json['price_rub']),
+      trafficLimitGb: json['traffic_limit_gb'] == null
+          ? null
+          : _asDouble(json['traffic_limit_gb']),
       isCurrent: json['is_current'] ?? false,
     );
   }
 
+  static int _asInt(dynamic v, [int def = 0]) =>
+      v is int ? v : int.tryParse('$v') ?? def;
+
+  static double _asDouble(dynamic v) =>
+      v is double ? v : double.tryParse('$v') ?? 0;
+
   String get priceFormatted => '${priceRub.toStringAsFixed(0)} ₽';
-  String get durationFormatted => '$durationDays дн.';
 }
 
 class TrialCreateResponse {
@@ -176,11 +161,11 @@ class TrialCreateResponse {
 
   factory TrialCreateResponse.fromJson(Map<String, dynamic> json) {
     return TrialCreateResponse(
-      status: json['status'],
-      claimCode: json['claim_code'],
-      subUrl: json['sub_url'],
-      error: json['error'],
-      message: json['message'],
+      status: json['status']?.toString(),
+      claimCode: json['claim_code']?.toString(),
+      subUrl: json['sub_url']?.toString(),
+      error: json['error']?.toString(),
+      message: json['message']?.toString(),
     );
   }
 }
@@ -191,19 +176,16 @@ class PayCreateResponse {
   final double? amountRub;
   final String? error;
 
-  PayCreateResponse({
-    this.orderId,
-    this.qrUrl,
-    this.amountRub,
-    this.error,
-  });
+  PayCreateResponse({this.orderId, this.qrUrl, this.amountRub, this.error});
 
   factory PayCreateResponse.fromJson(Map<String, dynamic> json) {
     return PayCreateResponse(
-      orderId: json['order_id'],
-      qrUrl: json['qr_url'],
-      amountRub: json['amount_rub']?.toDouble(),
-      error: json['error'],
+      orderId: json['order_id']?.toString(),
+      qrUrl: json['qr_url']?.toString(),
+      amountRub: json['amount_rub'] == null
+          ? null
+          : double.tryParse('${json['amount_rub']}'),
+      error: json['error']?.toString(),
     );
   }
 }
@@ -223,10 +205,10 @@ class PayCheckResponse {
 
   factory PayCheckResponse.fromJson(Map<String, dynamic> json) {
     return PayCheckResponse(
-      status: json['status'] ?? 'pending',
-      claimCode: json['claim_code'],
-      subUrl: json['sub_url'],
-      message: json['message'],
+      status: json['status']?.toString() ?? 'pending',
+      claimCode: json['claim_code']?.toString(),
+      subUrl: json['sub_url']?.toString(),
+      message: json['message']?.toString(),
     );
   }
 }
@@ -248,11 +230,13 @@ class KeyRenewCreateResponse {
 
   factory KeyRenewCreateResponse.fromJson(Map<String, dynamic> json) {
     return KeyRenewCreateResponse(
-      orderId: json['order_id'],
-      qrUrl: json['qr_url'],
-      amountRub: json['amount_rub']?.toDouble(),
-      error: json['error'],
-      message: json['message'],
+      orderId: json['order_id']?.toString(),
+      qrUrl: json['qr_url']?.toString(),
+      amountRub: json['amount_rub'] == null
+          ? null
+          : double.tryParse('${json['amount_rub']}'),
+      error: json['error']?.toString(),
+      message: json['message']?.toString(),
     );
   }
 }
@@ -265,17 +249,8 @@ class KeyRenewCheckResponse {
 
   factory KeyRenewCheckResponse.fromJson(Map<String, dynamic> json) {
     return KeyRenewCheckResponse(
-      status: json['status'],
-      message: json['message'],
+      status: json['status']?.toString(),
+      message: json['message']?.toString(),
     );
   }
-}
-
-class _ApiException implements Exception {
-  final String message;
-
-  _ApiException({required this.message});
-
-  @override
-  String toString() => message;
 }
