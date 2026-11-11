@@ -251,11 +251,13 @@ class VpnService {
       _process!.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((line) => _log('[sing-box] $line'));
+          .listen(_logSingBox);
+      // sing-box пишет весь журнал (включая INFO) в stderr —
+      // уровень определяется по содержимому строки, а не по потоку.
       _process!.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
-          .listen((line) => _log('[sing-box ERR] $line'));
+          .listen(_logSingBox);
 
       // Даём время на создание TUN-адаптера; если процесс умер — ошибка.
       final exitCode = await _process!.exitCode.timeout(
@@ -472,6 +474,17 @@ class VpnService {
       _logLines.removeRange(0, _logLines.length - _maxLogLines);
     }
     debugPrint('[VPN] $msg');
+  }
+
+  /// Помечает строку журнала sing-box по её уровню, а не по потоку вывода.
+  void _logSingBox(String line) {
+    if (line.contains('ERROR') || line.contains('FATAL')) {
+      _log('[sing-box ERR] $line');
+    } else if (line.contains('WARN')) {
+      _log('[sing-box WARN] $line');
+    } else {
+      _log('[sing-box] $line');
+    }
   }
 
   String _maskLink(String link) {

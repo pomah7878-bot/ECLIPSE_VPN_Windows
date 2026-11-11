@@ -131,6 +131,24 @@ void main() {
       expect((ruRule as Map)['outbound'], 'direct');
     });
 
+    test('smart: http_clients вместо устаревшего download_detour', () {
+      final cfg = ConfigGenerator.generate(
+          link: link, mode: RoutingMode.smart)!;
+      final clients = cfg['http_clients'] as List;
+      expect((clients[0] as Map)['detour'], 'proxy');
+      expect(routeOf(cfg)['default_http_client'], 'rs_client');
+      for (final rs in routeOf(cfg)['rule_set'] as List) {
+        expect((rs as Map).containsKey('download_detour'), false);
+      }
+    });
+
+    test('global: нет http_clients (rule-set не используются)', () {
+      final cfg = ConfigGenerator.generate(
+          link: link, mode: RoutingMode.global)!;
+      expect(cfg.containsKey('http_clients'), false);
+      expect(routeOf(cfg).containsKey('default_http_client'), false);
+    });
+
     test('ruThroughVpn: rule_set RU -> proxy, final=direct', () {
       final cfg = ConfigGenerator.generate(
           link: link, mode: RoutingMode.ruThroughVpn)!;

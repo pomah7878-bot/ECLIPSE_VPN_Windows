@@ -100,6 +100,10 @@ class ConfigGenerator {
 
     return {
       'log': {'level': 'info', 'timestamp': true},
+      if (useRuleSets)
+        'http_clients': [
+          {'tag': 'rs_client', 'detour': 'proxy'},
+        ],
       'dns': {
         'servers': [
           {
@@ -143,16 +147,15 @@ class ConfigGenerator {
               'tag': 'geoip-ru',
               'url':
                   'https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-ru.srs',
-              'download_detour': 'proxy',
             },
             {
               'type': 'remote',
               'tag': 'geosite-ru',
               'url':
                   'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ru.srs',
-              'download_detour': 'proxy',
             },
           ],
+        if (useRuleSets) 'default_http_client': 'rs_client',
         'auto_detect_interface': true,
         'default_domain_resolver': 'dns_local',
         'final': mode == RoutingMode.ruThroughVpn ? 'direct' : 'proxy',
