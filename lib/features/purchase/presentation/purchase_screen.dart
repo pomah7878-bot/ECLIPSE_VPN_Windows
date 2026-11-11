@@ -25,7 +25,7 @@ enum _PurchaseState {
 
 /// Личный кабинет / покупка VPN.
 ///
-/// - Вход по коду из бота, OAuth (Google/Yandex/VK)
+/// - Вход по коду из бота, OAuth (Google/Yandex)
 /// - Список ключей + продление
 /// - Тарифы + пробный период
 /// - Оплата через ЮKassa: открытие страницы оплаты в браузере + поллинг статуса
@@ -446,12 +446,6 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           icon: Icons.account_circle_outlined,
           label: 'Войти через Яндекс',
           onPressed: isLoading ? null : () => _oauthLogin(OAuthProvider.yandex),
-        ),
-        const SizedBox(height: 10),
-        _SocialButton(
-          icon: Icons.shield_outlined,
-          label: 'Войти через VK',
-          onPressed: isLoading ? null : () => _oauthLogin(OAuthProvider.vk),
         ),
       ],
     );

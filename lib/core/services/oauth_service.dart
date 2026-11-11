@@ -10,7 +10,7 @@ import '../api/api_client.dart';
 import '../api/auth_api.dart';
 import 'deeplink_service.dart';
 
-enum OAuthProvider { google, yandex, vk }
+enum OAuthProvider { google, yandex }
 
 /// OAuth-авторизация через системный браузер — как в Android-приложении.
 ///
@@ -77,8 +77,6 @@ class OAuthService {
         return 'google';
       case OAuthProvider.yandex:
         return 'yandex';
-      case OAuthProvider.vk:
-        return 'vk';
     }
   }
 

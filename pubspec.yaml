@@ -1,7 +1,7 @@
 name: eclipse_vpn_windows
 description: ECLIPSE VPN — Windows VPN client
 publish_to: 'none'
-version: 0.2.0+1
+version: 0.2.1+2
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
