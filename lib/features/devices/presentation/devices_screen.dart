@@ -168,7 +168,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   List<Widget> _buildContent() {
     if (_loading) {
       return [
-        SizedBox(height: 120),
+        const SizedBox(height: 120),
         Center(child: CircularProgressIndicator(color: AppTheme.goldAccent)),
       ];
     }
@@ -283,7 +283,7 @@ class _DeviceCard extends StatelessWidget {
             InkWell(
               onTap: onDisconnect,
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 6),
+                padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Text(
                   'Отключить',
                   style: TextStyle(

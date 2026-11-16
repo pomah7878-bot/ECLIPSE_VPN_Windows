@@ -215,7 +215,7 @@ class _LoginContentState extends State<LoginContent> {
                 const SizedBox(height: 18),
                 if (_isLoading)
                   Padding(
-                    padding: EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: 12),
                     child: SizedBox(
                       width: 26,
                       height: 26,

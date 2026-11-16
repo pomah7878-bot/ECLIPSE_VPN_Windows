@@ -191,7 +191,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         ] else
           Center(
             child: Padding(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               child: CircularProgressIndicator(color: AppTheme.goldAccent),
             ),
           ),

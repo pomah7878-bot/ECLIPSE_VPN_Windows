@@ -50,7 +50,7 @@ class _ModesScreenState extends State<ModesScreen> {
           children: [
             if (_isSwitching)
               Padding(
-                padding: EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: LinearProgressIndicator(color: AppTheme.goldAccent),
               ),
             ...RoutingMode.values.map(

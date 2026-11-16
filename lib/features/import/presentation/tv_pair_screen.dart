@@ -89,7 +89,7 @@ class _TvPairScreenState extends State<TvPairScreen> {
           ),
           const SizedBox(height: 18),
           if (_loading)
-            Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator(color: AppTheme.goldAccent)))
+            Center(child: Padding(padding: const EdgeInsets.all(30), child: CircularProgressIndicator(color: AppTheme.goldAccent)))
           else if (_error != null)
             Column(
               children: [
@@ -133,7 +133,7 @@ class _TvPairScreenState extends State<TvPairScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.goldAccent)),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Text('Ждём подписку с телефона…', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
                   ],
                 ),

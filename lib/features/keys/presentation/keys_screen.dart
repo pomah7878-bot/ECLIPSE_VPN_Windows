@@ -75,7 +75,7 @@ class _KeysScreenState extends State<KeysScreen> {
                   child: _keys.isEmpty
                       ? ListView(
                           children: [
-                            SizedBox(height: 160),
+                            const SizedBox(height: 160),
                             Center(child: Text('Ключей пока нет', style: TextStyle(color: AppTheme.textMuted))),
                           ],
                         )

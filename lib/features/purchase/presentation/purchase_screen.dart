@@ -358,7 +358,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       case _PurchaseState.loadingTariffs:
         return Center(
           child: Padding(
-            padding: EdgeInsets.all(40),
+            padding: const EdgeInsets.all(40),
             child: CircularProgressIndicator(color: AppTheme.goldAccent),
           ),
         );
@@ -369,7 +369,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       case _PurchaseState.creatingPayment:
         return Center(
           child: Padding(
-            padding: EdgeInsets.all(40),
+            padding: const EdgeInsets.all(40),
             child: CircularProgressIndicator(color: AppTheme.goldAccent),
           ),
         );
@@ -581,7 +581,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               child: CircularProgressIndicator(
                   strokeWidth: 2, color: AppTheme.goldAccent),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Text(
               'Проверяем статус платежа...',
               style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
@@ -855,7 +855,7 @@ class _TariffCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
