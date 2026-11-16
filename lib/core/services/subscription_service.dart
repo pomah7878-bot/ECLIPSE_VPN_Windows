@@ -14,7 +14,8 @@ class SubscriptionServer {
 
 /// Загрузка подписки ключа — как в Android-приложении.
 ///
-/// GET {sub_url} с заголовками X-Eclipse-App: 1 и X-HWID: <id устройства>.
+/// GET {sub_url} с заголовками X-Eclipse-App: 1, X-Eclipse-Platform: windows
+/// и X-HWID: <id устройства>.
 /// Тело — base64 (MIME) списка ссылок или ссылки простым текстом.
 class SubscriptionService {
   static final SubscriptionService _instance = SubscriptionService._internal();
@@ -27,7 +28,8 @@ class SubscriptionService {
     responseType: ResponseType.plain,
     headers: {
       'X-Eclipse-App': '1',
-      'User-Agent': 'ECLIPSE-Windows/0.2.0',
+      'X-Eclipse-Platform': 'windows',
+      'User-Agent': 'ECLIPSE-Windows/0.2.3',
     },
   ));
 

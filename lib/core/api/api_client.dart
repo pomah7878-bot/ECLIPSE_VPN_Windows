@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 ///
 /// Совместимость с Android-приложением:
 /// - Cookie-сессия сохраняется между запусками (PersistCookieJar)
-/// - Заголовок X-Eclipse-App: 1
+/// - Заголовок X-Eclipse-App: 1 и X-Eclipse-Platform: windows
 /// - Базовый URL: https://eclipse.unlimited.bot.nu/api
 class ApiClient {
   static const String baseUrl = 'https://eclipse.unlimited.bot.nu';
@@ -33,6 +33,7 @@ class ApiClient {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'X-Eclipse-App': '1',
+        'X-Eclipse-Platform': 'windows',
       },
     ));
 
