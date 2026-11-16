@@ -116,6 +116,9 @@ class KillSwitchService {
       throw const KillSwitchException('Не удалось создать правила Firewall');
     }
 
+    // Маркер ставим ДО смены политики: если приложение упадёт между этими
+    // шагами, следующий запуск всё равно снимет блокировку.
+    await _setMarker(true);
     final result = await Process.run('netsh', [
       'advfirewall',
       'set',
@@ -125,10 +128,10 @@ class KillSwitchService {
     ]);
     if (result.exitCode != 0) {
       await _deleteRules();
+      await _setMarker(false);
       throw const KillSwitchException('Не удалось включить блокировку');
     }
     _active = true;
-    await _setMarker(true);
   }
 
   Future<void> _restore({required bool quiet, bool force = false}) async {
