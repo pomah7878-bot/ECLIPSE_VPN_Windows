@@ -29,7 +29,7 @@ class SubscriptionService {
     headers: {
       'X-Eclipse-App': '1',
       'X-Eclipse-Platform': 'windows',
-      'User-Agent': 'ECLIPSE-Windows/0.4.0',
+      'User-Agent': 'ECLIPSE-Windows/0.5.0',
     },
   ));
 
