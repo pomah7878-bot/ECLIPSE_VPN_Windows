@@ -96,7 +96,7 @@ class _ImportScreenState extends State<ImportScreen> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppTheme.cardBorder),
             ),
-            child: const Text(
+            child: Text(
               'Вставьте ссылку на подписку или одиночный конфиг. Это гостевой режим: '
               'аккаунт не нужен, но управлять ключом можно только в том сервисе, где он выдан.',
               style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
@@ -107,7 +107,7 @@ class _ImportScreenState extends State<ImportScreen> {
             controller: _controller,
             minLines: 3,
             maxLines: 6,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'https://… или vless://…',
               prefixIcon: Icon(Icons.link, color: AppTheme.goldAccent),
             ),
@@ -131,7 +131,7 @@ class _ImportScreenState extends State<ImportScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: const TextStyle(color: AppTheme.errorRed, fontSize: 13)),
+            Text(_error!, style: TextStyle(color: AppTheme.errorRed, fontSize: 13)),
           ],
           const SizedBox(height: 16),
           ElevatedButton(
@@ -140,7 +140,7 @@ class _ImportScreenState extends State<ImportScreen> {
           ),
           if (imported) ...[
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Импортированная подписка уже активна. При подключении приложение использует её вместо аккаунта.',
               style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
             ),

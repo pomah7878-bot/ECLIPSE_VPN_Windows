@@ -356,7 +356,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       case _PurchaseState.loginLoading:
         return _buildLoginSection();
       case _PurchaseState.loadingTariffs:
-        return const Center(
+        return Center(
           child: Padding(
             padding: EdgeInsets.all(40),
             child: CircularProgressIndicator(color: AppTheme.goldAccent),
@@ -367,7 +367,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       case _PurchaseState.tariffsList:
         return _buildTariffsSection();
       case _PurchaseState.creatingPayment:
-        return const Center(
+        return Center(
           child: Padding(
             padding: EdgeInsets.all(40),
             child: CircularProgressIndicator(color: AppTheme.goldAccent),
@@ -390,18 +390,18 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Введите код доступа из Telegram-бота или войдите через соцсети',
           style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _codeController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Код доступа',
             prefixIcon: Icon(Icons.key, color: AppTheme.goldAccent),
           ),
-          style: const TextStyle(color: AppTheme.textPrimary),
+          style: TextStyle(color: AppTheme.textPrimary),
           enabled: !isLoading,
           textInputAction: TextInputAction.done,
           onSubmitted: (_) => _login(),
@@ -411,7 +411,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               _errorMessage!,
-              style: const TextStyle(color: AppTheme.errorRed, fontSize: 13),
+              style: TextStyle(color: AppTheme.errorRed, fontSize: 13),
             ),
           ),
         const SizedBox(height: 12),
@@ -431,7 +431,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        const Center(
+        Center(
           child: Text('или',
               style: TextStyle(color: AppTheme.textMuted, fontSize: 13)),
         ),
@@ -456,7 +456,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_keys.isNotEmpty) ...[
-          const Text(
+          Text(
             'Ваши ключи',
             style: TextStyle(
               fontSize: 18,
@@ -472,7 +472,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
           const SizedBox(height: 8),
         ],
         if (_canLinkOauth) ...[
-          const Text(
+          Text(
             'Привязать аккаунт бота',
             style: TextStyle(
                 fontSize: 16,
@@ -485,11 +485,11 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               Expanded(
                 child: TextField(
                   controller: _linkCodeController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Код из бота',
                     prefixIcon: Icon(Icons.link, color: AppTheme.goldAccent),
                   ),
-                  style: const TextStyle(color: AppTheme.textPrimary),
+                  style: TextStyle(color: AppTheme.textPrimary),
                 ),
               ),
               const SizedBox(width: 8),
@@ -507,11 +507,11 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               padding: const EdgeInsets.only(top: 8),
               child: Text(_errorMessage!,
                   style:
-                      const TextStyle(color: AppTheme.errorRed, fontSize: 13)),
+                      TextStyle(color: AppTheme.errorRed, fontSize: 13)),
             ),
           const SizedBox(height: 20),
         ],
-        const Text(
+        Text(
           'Выберите тариф',
           style: TextStyle(
             fontSize: 18,
@@ -532,7 +532,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         Center(
           child: TextButton(
             onPressed: _logout,
-            child: const Text('Выйти',
+            child: Text('Выйти',
                 style: TextStyle(color: AppTheme.textMuted)),
           ),
         ),
@@ -546,7 +546,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         const SizedBox(height: 20),
         Text(
           isRenew ? 'Ожидание продления' : 'Ожидание оплаты',
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: AppTheme.textPrimary),
@@ -556,7 +556,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
             padding: const EdgeInsets.only(top: 8),
             child: Text(
               '${_amountRub!.toInt()} ₽',
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: AppTheme.goldAccent),
@@ -572,7 +572,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
         ),
         ),
         const SizedBox(height: 24),
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
@@ -594,7 +594,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
             _polling = false;
             _loadTariffs();
           },
-          child: const Text('Отмена',
+          child: Text('Отмена',
               style: TextStyle(color: AppTheme.textMuted)),
         ),
       ],
@@ -606,7 +606,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
       children: [
         const SizedBox(height: 30),
         Text(message,
-            style: const TextStyle(color: AppTheme.errorRed, fontSize: 16),
+            style: TextStyle(color: AppTheme.errorRed, fontSize: 16),
             textAlign: TextAlign.center),
         const SizedBox(height: 16),
         SizedBox(
@@ -625,9 +625,9 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     return Column(
       children: [
         const SizedBox(height: 30),
-        const Icon(Icons.check_circle, color: AppTheme.successGreen, size: 64),
+        Icon(Icons.check_circle, color: AppTheme.successGreen, size: 64),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Готово!',
           style: TextStyle(
               fontSize: 22,
@@ -635,7 +635,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               color: AppTheme.textPrimary),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Подписка добавлена в ваш аккаунт.\nМожно подключаться к VPN.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
@@ -672,7 +672,7 @@ class _SocialButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppTheme.goldAccent, width: 1.5),
+          side: BorderSide(color: AppTheme.goldAccent, width: 1.5),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
@@ -682,7 +682,7 @@ class _SocialButton extends StatelessWidget {
             Icon(icon, size: 22, color: AppTheme.goldAccent),
             const SizedBox(width: 10),
             Text(label,
-                style: const TextStyle(fontSize: 15, color: AppTheme.goldAccent)),
+                style: TextStyle(fontSize: 15, color: AppTheme.goldAccent)),
           ],
         ),
       ),
@@ -713,7 +713,7 @@ class _KeyCard extends StatelessWidget {
         children: [
           Text(
             vpnKey.displayName,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textPrimary),
@@ -721,7 +721,7 @@ class _KeyCard extends StatelessWidget {
           if (vpnKey.serverName != null)
             Text(
               vpnKey.serverName!,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13, color: AppTheme.textSecondary),
             ),
           const SizedBox(height: 8),
@@ -743,7 +743,7 @@ class _KeyCard extends StatelessWidget {
                   '${vpnKey.trafficUsedGb.toStringAsFixed(1)} / '
                   '${vpnKey.trafficLimitGb!.toStringAsFixed(0)} GB',
                   style:
-                      const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
             ],
           ),
@@ -754,12 +754,12 @@ class _KeyCard extends StatelessWidget {
             child: OutlinedButton(
               onPressed: onRenew,
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppTheme.goldAccent),
+                side: BorderSide(color: AppTheme.goldAccent),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
               ),
               child:
-                  const Text('Продлить', style: TextStyle(color: AppTheme.goldAccent)),
+                  Text('Продлить', style: TextStyle(color: AppTheme.goldAccent)),
             ),
           ),
         ],
@@ -786,7 +786,7 @@ class _TrialCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Пробный период',
             style: TextStyle(
                 fontSize: 17,
@@ -794,7 +794,7 @@ class _TrialCard extends StatelessWidget {
                 color: AppTheme.goldAccent),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Бесплатный доступ на 3 дня',
             style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
           ),
@@ -840,7 +840,7 @@ class _TariffCard extends StatelessWidget {
               children: [
                 Text(
                   tariff.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: AppTheme.textPrimary),
@@ -849,7 +849,7 @@ class _TariffCard extends StatelessWidget {
                 Text(
                   '${tariff.durationDays} дн.'
                   '${tariff.trafficLimitGb != null ? ' · ${tariff.trafficLimitGb!.toStringAsFixed(0)} GB' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13, color: AppTheme.textSecondary),
                 ),
               ],
@@ -861,7 +861,7 @@ class _TariffCard extends StatelessWidget {
             children: [
               Text(
                 tariff.priceFormatted,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: AppTheme.goldAccent),

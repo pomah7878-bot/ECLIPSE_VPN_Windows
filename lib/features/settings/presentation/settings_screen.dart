@@ -444,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _section(String title) => Padding(
         padding: const EdgeInsets.only(top: 12, bottom: 6, left: 4),
-        child: Text(title, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted, fontWeight: FontWeight.w700)),
+        child: Text(title, style: TextStyle(fontSize: 12, color: AppTheme.textMuted, fontWeight: FontWeight.w700)),
       );
 
   Widget _tile({
@@ -461,8 +461,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onTap: onTap,
         leading: Icon(icon, color: color ?? AppTheme.goldAccent),
         title: Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color)),
-        subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
-        trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right, color: AppTheme.textMuted) : null),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+        trailing: trailing ?? (onTap != null ? Icon(Icons.chevron_right, color: AppTheme.textMuted) : null),
       ),
     );
   }

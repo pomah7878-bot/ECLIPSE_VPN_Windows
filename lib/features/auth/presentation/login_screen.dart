@@ -104,9 +104,9 @@ class _LoginContentState extends State<LoginContent> {
         backgroundColor: AppTheme.cardDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: BorderSide(color: AppTheme.cardBorder),
         ),
-        title: const Text(
+        title: Text(
           'Код из Telegram-бота',
           style: TextStyle(
               color: AppTheme.textPrimary, fontWeight: FontWeight.bold),
@@ -114,11 +114,11 @@ class _LoginContentState extends State<LoginContent> {
         content: TextField(
           controller: _codeController,
           autofocus: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Введите код',
             prefixIcon: Icon(Icons.key, color: AppTheme.goldAccent),
           ),
-          style: const TextStyle(color: AppTheme.textPrimary),
+          style: TextStyle(color: AppTheme.textPrimary),
           textInputAction: TextInputAction.done,
           onSubmitted: (_) {
             Navigator.pop(ctx);
@@ -128,7 +128,7 @@ class _LoginContentState extends State<LoginContent> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена',
+            child: Text('Отмена',
                 style: TextStyle(color: AppTheme.textMuted)),
           ),
           ElevatedButton(
@@ -155,7 +155,7 @@ class _LoginContentState extends State<LoginContent> {
               children: [
                 const EclipseLogo(size: 150),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'ECLIPSE',
                   style: TextStyle(
                     fontSize: 34,
@@ -165,7 +165,7 @@ class _LoginContentState extends State<LoginContent> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Unlimited',
                   style: TextStyle(
                     fontSize: 22,
@@ -174,7 +174,7 @@ class _LoginContentState extends State<LoginContent> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'VPN без сложных настроек',
                   style: TextStyle(fontSize: 15, color: AppTheme.textPrimary),
                 ),
@@ -214,7 +214,7 @@ class _LoginContentState extends State<LoginContent> {
                 ),
                 const SizedBox(height: 18),
                 if (_isLoading)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: 12),
                     child: SizedBox(
                       width: 26,
@@ -229,11 +229,11 @@ class _LoginContentState extends State<LoginContent> {
                     child: Text(
                       _errorMessage!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                           color: AppTheme.errorRed, fontSize: 13),
                     ),
                   ),
-                const Text(
+                Text(
                   'Уже покупали через бота? Войдите кодом из бота —\nподписка и баланс подтянутся.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
@@ -295,7 +295,7 @@ class _PillButton extends StatelessWidget {
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: AppTheme.textPrimary,
-          side: const BorderSide(color: AppTheme.goldAccent, width: 1.5),
+          side: BorderSide(color: AppTheme.goldAccent, width: 1.5),
           shape: const StadiumBorder(),
         ),
         child: Text(

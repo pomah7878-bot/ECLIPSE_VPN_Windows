@@ -46,7 +46,7 @@ class _EclipseLogoPainter extends CustomPainter {
       coronaCenter,
       r * 0.52,
       Paint()
-        ..shader = const RadialGradient(
+        ..shader = RadialGradient(
           colors: [AppTheme.goldLight, AppTheme.goldAccent],
           center: Alignment(0.4, -0.4),
         ).createShader(

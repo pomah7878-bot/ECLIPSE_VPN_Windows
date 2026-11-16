@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   child: Text(
                     _status.message,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppTheme.errorRed, fontSize: 13),
                     textAlign: TextAlign.center,
                   ),
@@ -179,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen>
                     children: [
                       Text(
                         _showLogs ? 'Скрыть логи' : 'Показать логи',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12, color: AppTheme.textMuted),
                       ),
                       Icon(
@@ -198,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen>
                             ),
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           'Копировать',
                           style: TextStyle(
                               fontSize: 12, color: AppTheme.goldAccent),
@@ -223,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen>
                       reverse: true,
                       child: Text(
                         _vpn.logs,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           color: AppTheme.textMuted,
                           fontFamily: 'monospace',
@@ -248,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           const EclipseLogoSmall(),
           const SizedBox(width: 10),
-          const Text(
+          Text(
             'ECLIPSE',
             style: TextStyle(
               fontSize: 20,
@@ -258,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
           const SizedBox(width: 6),
-          const Text(
+          Text(
             'Unlimited',
             style: TextStyle(
               fontSize: 20,
@@ -276,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen>
                 shape: BoxShape.circle,
                 border: Border.all(color: AppTheme.goldAccent, width: 1.2),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person,
                 color: AppTheme.goldAccent,
                 size: 24,
@@ -305,7 +305,7 @@ class _StatusCard extends StatelessWidget {
       child: Row(
         children: [
           if (status.isConnecting)
-            const SizedBox(
+            SizedBox(
               width: 26,
               height: 26,
               child: CircularProgressIndicator(
@@ -343,7 +343,7 @@ class _StatusCard extends StatelessWidget {
                   connected
                       ? 'Трафик зашифрован'
                       : 'Нажмите кнопку для подключения',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13, color: AppTheme.textSecondary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -371,7 +371,7 @@ class _ServerCard extends StatelessWidget {
           Expanded(
             child: Text(
               serverName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textPrimary,
@@ -380,7 +380,7 @@ class _ServerCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Icon(Icons.bolt, color: AppTheme.goldAccent, size: 24),
+          Icon(Icons.bolt, color: AppTheme.goldAccent, size: 24),
         ],
       ),
     );
@@ -402,7 +402,7 @@ class _RoutingCard extends StatelessWidget {
           Expanded(
             child: Text(
               'Маршрутизация: $mode',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: AppTheme.textPrimary,
@@ -411,7 +411,7 @@ class _RoutingCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const Icon(Icons.chevron_right,
+          Icon(Icons.chevron_right,
               color: AppTheme.textSecondary, size: 22),
         ],
       ),

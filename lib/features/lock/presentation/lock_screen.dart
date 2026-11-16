@@ -59,7 +59,7 @@ class _LockScreenState extends State<LockScreen> {
                 const SizedBox(height: 20),
                 const Text('ECLIPSE VPN', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 6),
-                const Text('Введите PIN для входа', style: TextStyle(color: AppTheme.textSecondary)),
+                Text('Введите PIN для входа', style: TextStyle(color: AppTheme.textSecondary)),
                 const SizedBox(height: 20),
                 TextField(
                   controller: _controller,
@@ -74,7 +74,7 @@ class _LockScreenState extends State<LockScreen> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
-                  Text(_error!, style: const TextStyle(color: AppTheme.errorRed)),
+                  Text(_error!, style: TextStyle(color: AppTheme.errorRed)),
                 ],
                 const SizedBox(height: 16),
                 SizedBox(

@@ -82,18 +82,18 @@ class _TvPairScreenState extends State<TvPairScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          Text(
             'Откройте ECLIPSE на телефоне, зайдите в профиль и выберите перенос подписки. '
             'Отсканируйте этот QR — подписка появится на компьютере.',
             style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 18),
           if (_loading)
-            const Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator(color: AppTheme.goldAccent)))
+            Center(child: Padding(padding: EdgeInsets.all(30), child: CircularProgressIndicator(color: AppTheme.goldAccent)))
           else if (_error != null)
             Column(
               children: [
-                Text(_error!, style: const TextStyle(color: AppTheme.errorRed)),
+                Text(_error!, style: TextStyle(color: AppTheme.errorRed)),
                 const SizedBox(height: 12),
                 ElevatedButton(onPressed: _create, child: const Text('Повторить')),
               ],
@@ -108,11 +108,11 @@ class _TvPairScreenState extends State<TvPairScreen> {
               ),
               child: Column(
                 children: [
-                  const Icon(Icons.check_circle, color: AppTheme.successGreen, size: 46),
+                  Icon(Icons.check_circle, color: AppTheme.successGreen, size: 46),
                   const SizedBox(height: 10),
                   const Text('Подписка получена', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 6),
-                  const Text('Нажмите «Готово» и подключитесь на главной.', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                  Text('Нажмите «Готово» и подключитесь на главной.', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
                   const SizedBox(height: 16),
                   ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Готово')),
                 ],
@@ -129,7 +129,7 @@ class _TvPairScreenState extends State<TvPairScreen> {
                 const SizedBox(height: 12),
                 Text('Код: ${_session!.code}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, letterSpacing: 4)),
                 const SizedBox(height: 8),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.goldAccent)),

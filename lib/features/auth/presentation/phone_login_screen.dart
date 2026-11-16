@@ -107,7 +107,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           if (_request == null) ...[
-            const Text(
+            Text(
               'Введите номер телефона — сервис позвонит на него для подтверждения. '
               'Звонок бесплатный, номер используется только для входа.',
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
@@ -117,7 +117,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               autofocus: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: '+7 999 123-45-67',
                 prefixIcon: Icon(Icons.phone, color: AppTheme.goldAccent),
               ),
@@ -131,7 +131,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             _buildSteps(_request!),
           if (_error != null) ...[
             const SizedBox(height: 14),
-            Text(_error!, style: const TextStyle(color: AppTheme.errorRed, fontSize: 13)),
+            Text(_error!, style: TextStyle(color: AppTheme.errorRed, fontSize: 13)),
           ],
         ],
       ),
@@ -175,7 +175,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
       children: [
         Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         const SizedBox(height: 10),
-        Text(detail, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+        Text(detail, style: TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
         const SizedBox(height: 16),
         if (request.needsCode) ...[
           TextField(
@@ -189,7 +189,7 @@ class _PhoneLoginScreenState extends State<PhoneLoginScreen> {
             child: const Text('Подтвердить'),
           ),
         ] else
-          const Center(
+          Center(
             child: Padding(
               padding: EdgeInsets.all(12),
               child: CircularProgressIndicator(color: AppTheme.goldAccent),

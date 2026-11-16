@@ -121,9 +121,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: AppTheme.eclipseBlack,
       appBar: AppBar(title: const Text('Профиль')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.goldAccent))
+          ? Center(child: CircularProgressIndicator(color: AppTheme.goldAccent))
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: AppTheme.errorRed)))
+              ? Center(child: Text(_error!, style: TextStyle(color: AppTheme.errorRed)))
               : RefreshIndicator(
                   onRefresh: _load,
                   color: AppTheme.goldAccent,
@@ -144,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         onPressed: _logout,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppTheme.errorRed,
-                          side: const BorderSide(color: AppTheme.errorRed),
+                          side: BorderSide(color: AppTheme.errorRed),
                         ),
                         child: const Text('Выйти'),
                       ),
@@ -183,16 +183,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
                 const SizedBox(height: 8),
                 Text('Баланс: ${session.balanceHuman ?? '0 ₽'}',
-                    style: const TextStyle(fontSize: 14, color: AppTheme.goldAccent, fontWeight: FontWeight.w600)),
+                    style: TextStyle(fontSize: 14, color: AppTheme.goldAccent, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 Text(
                   session.phone?.isNotEmpty == true
                       ? 'Телефон: ${session.phone}'
                       : 'Телефон не привязан',
-                  style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                  style: TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
                 ),
                 if (session.email?.isNotEmpty == true && session.email != name) ...[
                   const SizedBox(height: 2),
@@ -200,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'Email: ${session.email}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
+                    style: TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
                   ),
                 ],
               ],
@@ -217,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return CircleAvatar(radius: 30, backgroundImage: MemoryImage(base64Decode(base64)));
       } catch (_) {}
     }
-    return const CircleAvatar(
+    return CircleAvatar(
       radius: 30,
       backgroundColor: AppTheme.cardDarkSecondary,
       child: Icon(Icons.person, color: AppTheme.goldAccent, size: 30),
@@ -250,10 +250,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         const Text('Реферальная программа', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
         const SizedBox(height: 8),
-        Text('Приглашено: ${ref.referralsCount}', style: const TextStyle(color: AppTheme.textSecondary)),
+        Text('Приглашено: ${ref.referralsCount}', style: TextStyle(color: AppTheme.textSecondary)),
         if (ref.referralLink != null) ...[
           const SizedBox(height: 10),
-          SelectableText(ref.referralLink!, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+          SelectableText(ref.referralLink!, style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
           const SizedBox(height: 10),
           OutlinedButton.icon(
             onPressed: () => _copy('Реферальная ссылка', ref.referralLink),
@@ -295,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         if (_promoMessage != null) ...[
           const SizedBox(height: 8),
-          Text(_promoMessage!, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+          Text(_promoMessage!, style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
         ],
       ],
     ));
@@ -304,7 +304,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _historyCard() {
     final history = _history;
     if (history == null || history.items.isEmpty) {
-      return _card(const Text('История платежей пока пуста', style: TextStyle(color: AppTheme.textMuted)));
+      return _card(Text('История платежей пока пуста', style: TextStyle(color: AppTheme.textMuted)));
     }
     return _card(Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +320,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(item.title, style: const TextStyle(fontSize: 13)),
-                        Text(item.dateText, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                        Text(item.dateText, style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
                       ],
                     ),
                   ),
@@ -363,16 +363,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                  Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                  Text(subtitle, style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppTheme.textMuted),
+            Icon(Icons.chevron_right, color: AppTheme.textMuted),
           ],
         ),
       ),
     );
   }
 
-  Widget _divider() => const Divider(color: AppTheme.cardBorder, height: 1);
+  Widget _divider() => Divider(color: AppTheme.cardBorder, height: 1);
 }

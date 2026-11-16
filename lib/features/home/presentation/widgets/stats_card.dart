@@ -35,14 +35,14 @@ class StatsCard extends StatelessWidget {
           if (topLabel != null)
             Text(
               topLabel!,
-              style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
             )
           else if (icon != null)
             Icon(icon, color: iconColor, size: 18),
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
               color: AppTheme.textPrimary,
@@ -52,7 +52,7 @@ class StatsCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
           ),
         ],
       ),

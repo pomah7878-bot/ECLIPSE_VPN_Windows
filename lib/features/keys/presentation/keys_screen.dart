@@ -66,15 +66,15 @@ class _KeysScreenState extends State<KeysScreen> {
       backgroundColor: AppTheme.eclipseBlack,
       appBar: AppBar(title: const Text('Мои ключи')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.goldAccent))
+          ? Center(child: CircularProgressIndicator(color: AppTheme.goldAccent))
           : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: AppTheme.errorRed)))
+              ? Center(child: Text(_error!, style: TextStyle(color: AppTheme.errorRed)))
               : RefreshIndicator(
                   onRefresh: _load,
                   color: AppTheme.goldAccent,
                   child: _keys.isEmpty
                       ? ListView(
-                          children: const [
+                          children: [
                             SizedBox(height: 160),
                             Center(child: Text('Ключей пока нет', style: TextStyle(color: AppTheme.textMuted))),
                           ],
@@ -128,10 +128,10 @@ class _KeysScreenState extends State<KeysScreen> {
             ),
             const SizedBox(height: 8),
             if (key.serverName != null)
-              Text(key.serverName!, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+              Text(key.serverName!, style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
             const SizedBox(height: 6),
-            Text('Трафик: $traffic', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-            Text('Срок: $expiry', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+            Text('Трафик: $traffic', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+            Text('Срок: $expiry', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
           ],
         ),
       ),
@@ -289,7 +289,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
               Text(key.displayName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
               const SizedBox(height: 6),
               if (key.serverName != null)
-                Text(key.serverName!, style: const TextStyle(color: AppTheme.textSecondary)),
+                Text(key.serverName!, style: TextStyle(color: AppTheme.textSecondary)),
               const SizedBox(height: 8),
               Text('Трафик: ${key.trafficUsedGb.toStringAsFixed(2)}'
                   '${key.trafficLimitGb == null ? ' ГБ' : ' / ${key.trafficLimitGb!.toStringAsFixed(0)} ГБ'}'),
@@ -329,16 +329,16 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
               if (_loadingDevices)
                 const Center(child: Padding(padding: EdgeInsets.all(8), child: CircularProgressIndicator()))
               else if (_devices == null || _devices!.devices.isEmpty)
-                const Text('Устройства появятся после подключения', style: TextStyle(color: AppTheme.textMuted))
+                Text('Устройства появятся после подключения', style: TextStyle(color: AppTheme.textMuted))
               else
                 ..._devices!.devices.map((d) => ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.devices, color: AppTheme.goldAccent),
+                      leading: Icon(Icons.devices, color: AppTheme.goldAccent),
                       title: Text(d.title),
                       subtitle: Text(d.info, style: const TextStyle(fontSize: 11)),
                       trailing: d.canDisconnect
                           ? IconButton(
-                              icon: const Icon(Icons.link_off, color: AppTheme.errorRed),
+                              icon: Icon(Icons.link_off, color: AppTheme.errorRed),
                               onPressed: () async {
                                 final err = await _keys.disconnectDevice(key.keyId, d.deviceId);
                                 if (!mounted) return;
@@ -364,20 +364,20 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
                   Text(
                     'Статус: ${key.cdn!.packStatus}'
                     '${key.cdn!.expiresAt != null ? ' · до ${key.cdn!.expiresAt}' : ''}',
-                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                   ),
                   if (key.cdn!.limitBytes > 0)
                     Text(
                       'Трафик: ${(key.cdn!.usedBytes / (1024 * 1024 * 1024)).toStringAsFixed(2)}'
                       ' / ${(key.cdn!.limitBytes / (1024 * 1024 * 1024)).toStringAsFixed(0)} ГБ',
-                      style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                   const SizedBox(height: 8),
                 ],
                 if (key.cdn!.canBuy) ...[
                   Text(
                     '${key.cdn!.gb} ГБ на ${key.cdn!.days} дн. · ${key.cdn!.priceRub} ₽',
-                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton(
@@ -402,7 +402,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
                   onPressed: _delete,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppTheme.errorRed,
-                    side: const BorderSide(color: AppTheme.errorRed),
+                    side: BorderSide(color: AppTheme.errorRed),
                   ),
                   child: const Text('Удалить ключ'),
                 ),
@@ -410,7 +410,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
           )),
           if (_message != null) ...[
             const SizedBox(height: 12),
-            Text(_message!, style: const TextStyle(color: AppTheme.textSecondary)),
+            Text(_message!, style: TextStyle(color: AppTheme.textSecondary)),
           ],
         ],
       ),

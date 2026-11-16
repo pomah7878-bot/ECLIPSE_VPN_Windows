@@ -101,19 +101,19 @@ class _DevicesScreenState extends State<DevicesScreen> {
         backgroundColor: AppTheme.cardDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppTheme.cardBorder),
+          side: BorderSide(color: AppTheme.cardBorder),
         ),
-        title: const Text('Отключить устройство?',
+        title: Text('Отключить устройство?',
             style: TextStyle(color: AppTheme.textPrimary)),
         content: Text(
           '«${device.title}» потеряет доступ к VPN, слот освободится.',
-          style: const TextStyle(color: AppTheme.textSecondary),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child:
-                const Text('Отмена', style: TextStyle(color: AppTheme.textMuted)),
+                Text('Отмена', style: TextStyle(color: AppTheme.textMuted)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -167,7 +167,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   List<Widget> _buildContent() {
     if (_loading) {
-      return const [
+      return [
         SizedBox(height: 120),
         Center(child: CircularProgressIndicator(color: AppTheme.goldAccent)),
       ];
@@ -238,7 +238,7 @@ class _Note extends StatelessWidget {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+      style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
     );
   }
 }
@@ -264,7 +264,7 @@ class _DeviceCard extends StatelessWidget {
         children: [
           Text(
             device.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: AppTheme.textPrimary,
@@ -274,7 +274,7 @@ class _DeviceCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               device.info,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13, color: AppTheme.textSecondary),
             ),
           ],
@@ -282,7 +282,7 @@ class _DeviceCard extends StatelessWidget {
             const SizedBox(height: 8),
             InkWell(
               onTap: onDisconnect,
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 6),
                 child: Text(
                   'Отключить',

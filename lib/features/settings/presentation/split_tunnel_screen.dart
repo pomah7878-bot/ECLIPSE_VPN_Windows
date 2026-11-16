@@ -96,7 +96,7 @@ class _SplitTunnelScreenState extends State<SplitTunnelScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Text(
+          Text(
             'Выбранные приложения будут ходить в интернет напрямую, остальной трафик — через VPN. '
             'Изменения применяются при следующем подключении.',
             style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
@@ -109,7 +109,7 @@ class _SplitTunnelScreenState extends State<SplitTunnelScreen> {
             controller: _controller,
             decoration: InputDecoration(
               hintText: 'chrome.exe',
-              prefixIcon: const Icon(Icons.apps, color: AppTheme.goldAccent),
+              prefixIcon: Icon(Icons.apps, color: AppTheme.goldAccent),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () => _add(_controller.text),
@@ -129,7 +129,7 @@ class _SplitTunnelScreenState extends State<SplitTunnelScreen> {
           ),
           const SizedBox(height: 16),
           if (service.processes.isEmpty)
-            const Text('Список пуст', style: TextStyle(color: AppTheme.textMuted))
+            Text('Список пуст', style: TextStyle(color: AppTheme.textMuted))
           else
             Wrap(
               spacing: 8,
@@ -137,7 +137,7 @@ class _SplitTunnelScreenState extends State<SplitTunnelScreen> {
               children: service.processes
                   .map((p) => Chip(
                         backgroundColor: AppTheme.cardDark,
-                        side: const BorderSide(color: AppTheme.cardBorder),
+                        side: BorderSide(color: AppTheme.cardBorder),
                         label: Text(p),
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: () async {

@@ -160,7 +160,7 @@ class _SupportScreenState extends State<SupportScreen> {
                     border: Border.all(
                         color: AppTheme.goldAccent.withValues(alpha: 0.4)),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Помощник рекомендует обратиться к человеку.\n'
                     'Нажмите, чтобы открыть Telegram @EclipseVPNBot',
                     textAlign: TextAlign.center,
@@ -194,7 +194,7 @@ class _SupportScreenState extends State<SupportScreen> {
                     controller: _controller,
                     maxLines: 4,
                     minLines: 1,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: AppTheme.textPrimary, fontSize: 15),
                     decoration: const InputDecoration(
                       hintText: 'Ваше сообщение',
@@ -206,13 +206,13 @@ class _SupportScreenState extends State<SupportScreen> {
                 IconButton(
                   onPressed: _sending ? null : _send,
                   icon: _sending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: AppTheme.goldAccent),
                         )
-                      : const Icon(Icons.send, color: AppTheme.goldAccent),
+                      : Icon(Icons.send, color: AppTheme.goldAccent),
                 ),
               ],
             ),

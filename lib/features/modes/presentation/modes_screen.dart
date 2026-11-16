@@ -49,7 +49,7 @@ class _ModesScreenState extends State<ModesScreen> {
         child: Column(
           children: [
             if (_isSwitching)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: LinearProgressIndicator(color: AppTheme.goldAccent),
               ),
@@ -65,7 +65,7 @@ class _ModesScreenState extends State<ModesScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Режим можно изменить в любой момент.\n'
               'При смене режима активное подключение будет перезапущено.\n'
               'Списки российских ресурсов обновляются с сервера автоматически.',
@@ -125,14 +125,14 @@ class _ModeCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 13, color: AppTheme.textSecondary),
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check, color: AppTheme.goldAccent, size: 24),
+              Icon(Icons.check, color: AppTheme.goldAccent, size: 24),
           ],
         ),
       ),

@@ -54,7 +54,7 @@ class PowerButton extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isConnecting)
-                      const SizedBox(
+                      SizedBox(
                         width: 52,
                         height: 52,
                         child: CircularProgressIndicator(
@@ -71,7 +71,7 @@ class PowerButton extends StatelessWidget {
                         ],
                       )
                     else
-                      const Icon(Icons.power_settings_new,
+                      Icon(Icons.power_settings_new,
                           color: AppTheme.goldAccent, size: 56),
                     const SizedBox(height: 10),
                     Text(
@@ -92,7 +92,7 @@ class PowerButton extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           _uptimeText,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: AppTheme.textPrimary,
