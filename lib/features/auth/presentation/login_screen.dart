@@ -275,7 +275,7 @@ class _PillButton extends StatelessWidget {
             onPressed: onPressed,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
-              foregroundColor: AppTheme.eclipseBlack,
+              foregroundColor: AppTheme.onGold,
               elevation: 0,
               shadowColor: Colors.transparent,
               shape: const StadiumBorder(),

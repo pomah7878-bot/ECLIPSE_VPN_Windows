@@ -13,6 +13,7 @@ import '../../../core/services/notification_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/settings_service.dart';
 import '../../../core/services/split_tunnel_service.dart';
+import '../../../core/services/theme_service.dart';
 import '../../../core/services/update_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../import/presentation/import_screen.dart';
@@ -100,6 +101,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await SettingsService().setAutoConnect(value);
     if (mounted) setState(() => _autoconnect = value);
     if (value) await AutoConnectService().tryNow();
+  }
+
+  Future<void> _chooseTheme() async {
+    final selected = await showDialog<AppThemeMode>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        backgroundColor: AppTheme.cardDark,
+        title: const Text('Тема оформления'),
+        children: AppThemeMode.values
+            .map((mode) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, mode),
+                  child: Row(
+                    children: [
+                      Icon(
+                        mode == ThemeService().mode
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        color: mode == ThemeService().mode
+                            ? AppTheme.goldAccent
+                            : AppTheme.textMuted,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(mode.title),
+                    ],
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+    if (selected == null) return;
+    await ThemeService().setMode(selected);
+    if (mounted) setState(() {});
   }
 
   Future<String?> _askPin(String title) async {
@@ -346,6 +380,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
               if (mounted) setState(() {});
             },
+          ),
+          _tile(
+            icon: Icons.palette_outlined,
+            title: 'Тема',
+            subtitle: ThemeService().mode.title,
+            onTap: _chooseTheme,
           ),
           _section('Безопасность'),
           _tile(

@@ -17,6 +17,7 @@ import 'core/services/onboarding_service.dart';
 import 'core/services/session_service.dart';
 import 'core/services/settings_service.dart';
 import 'core/services/split_tunnel_service.dart';
+import 'core/services/theme_service.dart';
 import 'core/services/tray_service.dart';
 import 'core/services/vpn_service.dart';
 import 'core/theme/app_theme.dart';
@@ -54,6 +55,7 @@ Future<void> main(List<String> args) async {
   await ApiClient().init();
   await SettingsService().init();
   await SplitTunnelService().init();
+  await ThemeService().init();
   await AppLockService().init();
   await OnboardingService().init();
   await ImportService().init();
@@ -160,19 +162,26 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ECLIPSE VPN',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      home: ValueListenableBuilder<bool>(
-        valueListenable: OnboardingService().done,
-        builder: (_, done, __) {
-          if (!done) {
-            return OnboardingScreen(onDone: () => OnboardingService().markDone());
-          }
-          return const _AppGate();
-        },
-      ),
+    return ValueListenableBuilder<bool>(
+      valueListenable: ThemeService().isDark,
+      builder: (_, dark, __) {
+        AppTheme.apply(dark);
+        return MaterialApp(
+          key: ValueKey(dark),
+          title: 'ECLIPSE VPN',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.currentTheme,
+          home: ValueListenableBuilder<bool>(
+            valueListenable: OnboardingService().done,
+            builder: (_, done, __) {
+              if (!done) {
+                return OnboardingScreen(onDone: () => OnboardingService().markDone());
+              }
+              return const _AppGate();
+            },
+          ),
+        );
+      },
     );
   }
 }

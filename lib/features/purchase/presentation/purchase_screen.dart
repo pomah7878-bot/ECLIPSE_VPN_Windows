@@ -425,7 +425,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppTheme.eclipseBlack),
+                        strokeWidth: 2, color: AppTheme.onGold),
                   )
                 : const Text('Войти'),
           ),
