@@ -6,6 +6,7 @@ import '../../../core/services/oauth_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/eclipse_logo.dart';
+import 'phone_login_screen.dart';
 
 /// Содержимое экрана входа — по Android-приложению:
 /// логотип затмения, ECLIPSE / Unlimited, подзаголовок,
@@ -80,13 +81,12 @@ class _LoginContentState extends State<LoginContent> {
     }
   }
 
-  void _showPhoneNotice() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Вход по номеру телефона — в разработке'),
-        duration: Duration(seconds: 2),
-      ),
+  Future<void> _showPhoneNotice() async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
     );
+    if (ok == true) _finishLogin();
   }
 
   void _showCodeDialog() {

@@ -96,6 +96,67 @@ class AuthApi {
     throw ApiException(message: 'Ошибка привязки');
   }
 
+  /// POST /public/auth/phone/request — инициирует звонок для входа по номеру.
+  Future<PhoneRequestResponse> requestPhone(String phone) async {
+    try {
+      final response = await _client.dio.post(
+        '/public/auth/phone/request',
+        data: {'phone': phone},
+      );
+      if (response.statusCode == 200 && response.data['status'] == 'ok') {
+        return PhoneRequestResponse.fromJson(response.data);
+      }
+      throw ApiException(
+        message: response.data['message']?.toString() ?? 'Не удалось запросить звонок',
+        code: response.data['error']?.toString(),
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      final data = _errorData(e);
+      throw ApiException(
+        message: data?['message']?.toString() ?? 'Не удалось запросить звонок',
+        code: data?['error']?.toString(),
+      );
+    }
+  }
+
+  /// POST /public/auth/phone/check — проверка подтверждения номера.
+  Future<PhoneCheckResponse> checkPhone({
+    required String phone,
+    required String callId,
+    String? enteredCode,
+  }) async {
+    final data = <String, dynamic>{'phone': phone, 'call_id': callId};
+    if (enteredCode != null && enteredCode.isNotEmpty) {
+      data['entered_code'] = enteredCode;
+    }
+    try {
+      final response = await _client.dio.post('/public/auth/phone/check', data: data);
+      if (response.statusCode == 200) {
+        return PhoneCheckResponse.fromJson(response.data);
+      }
+      return PhoneCheckResponse(verified: false, message: 'Не удалось проверить номер');
+    } catch (e) {
+      final data = _errorData(e);
+      return PhoneCheckResponse(
+        verified: false,
+        message: data?['message']?.toString() ?? 'Не удалось проверить номер',
+      );
+    }
+  }
+
+  static Map<String, dynamic>? _errorData(Object e) {
+    try {
+      final dynamic d = e;
+      final data = d.response?.data;
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+    } catch (_) {
+      // ignore
+    }
+    return null;
+  }
+
   static int? _statusCodeOf(Object e) {
     try {
       final dynamic d = e;
@@ -228,6 +289,49 @@ class LinkCodeResponse {
     return LinkCodeResponse(
       ok: json['ok'] ?? false,
       message: json['message']?.toString(),
+    );
+  }
+}
+
+class PhoneRequestResponse {
+  final String method;
+  final String? callId;
+  final String? pincode;
+  final List<String> allowedPhones;
+
+  PhoneRequestResponse({
+    required this.method,
+    this.callId,
+    this.pincode,
+    this.allowedPhones = const [],
+  });
+
+  factory PhoneRequestResponse.fromJson(Map<String, dynamic> json) {
+    final raw = json['allowed_phones_for_call'];
+    final list = raw is List ? raw.map((e) => e.toString()).toList() : <String>[];
+    return PhoneRequestResponse(
+      method: json['method']?.toString() ?? 'flash_call',
+      callId: json['call_id']?.toString(),
+      pincode: json['pincode']?.toString(),
+      allowedPhones: list,
+    );
+  }
+
+  bool get needsCode => method == 'voice_code' || method == 'flashcall_real';
+}
+
+class PhoneCheckResponse {
+  final bool verified;
+  final String? message;
+  final String? accountType;
+
+  PhoneCheckResponse({required this.verified, this.message, this.accountType});
+
+  factory PhoneCheckResponse.fromJson(Map<String, dynamic> json) {
+    return PhoneCheckResponse(
+      verified: json['verified'] == true,
+      message: json['message']?.toString(),
+      accountType: json['account_type']?.toString(),
     );
   }
 }
