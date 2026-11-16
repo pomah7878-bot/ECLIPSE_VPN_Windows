@@ -11,6 +11,7 @@ import '../api/keys_api.dart';
 import 'config_generator.dart';
 import 'import_service.dart';
 import 'settings_service.dart';
+import 'split_tunnel_service.dart';
 import 'subscription_service.dart';
 
 /// Состояние VPN-подключения.
@@ -199,7 +200,13 @@ class VpnService {
       // 3. Конфиг sing-box
       _setState(VpnState.connecting, 'Создание конфига...');
       final mode = SettingsService().routingMode;
-      final config = ConfigGenerator.generate(link: link, mode: mode);
+      final split = SplitTunnelService();
+      final splitExclude = split.mode == SplitTunnelMode.exclude ? split.processes : const <String>[];
+      final config = ConfigGenerator.generate(
+        link: link,
+        mode: mode,
+        splitExclude: splitExclude,
+      );
       if (config == null) {
         _log('ERROR: неподдерживаемый формат ссылки: ${_maskLink(link)}');
         _setState(VpnState.error, 'Сервер вернул неподдерживаемый конфиг');

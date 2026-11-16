@@ -10,10 +10,12 @@ import '../../../core/services/config_generator.dart';
 import '../../../core/services/import_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/settings_service.dart';
+import '../../../core/services/split_tunnel_service.dart';
 import '../../../core/services/update_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../import/presentation/import_screen.dart';
 import '../../import/presentation/tv_pair_screen.dart';
+import 'split_tunnel_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
 import '../../support/presentation/support_screen.dart';
 
@@ -220,6 +222,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               MaterialPageRoute(builder: (_) => const ModesScreen()),
             ).then((_) => setState(() {})),
+          ),
+          _tile(
+            icon: Icons.call_split,
+            title: 'Раздельный туннель',
+            subtitle: SplitTunnelService().mode == SplitTunnelMode.off
+                ? 'Выключен'
+                : '${SplitTunnelService().processes.length} приложений мимо VPN',
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SplitTunnelScreen()),
+              );
+              if (mounted) setState(() {});
+            },
           ),
           _tile(
             icon: Icons.power_settings_new,

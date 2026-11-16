@@ -13,6 +13,7 @@ import 'core/services/import_service.dart';
 import 'core/services/onboarding_service.dart';
 import 'core/services/session_service.dart';
 import 'core/services/settings_service.dart';
+import 'core/services/split_tunnel_service.dart';
 import 'core/services/tray_service.dart';
 import 'core/services/vpn_service.dart';
 import 'core/theme/app_theme.dart';
@@ -49,6 +50,7 @@ Future<void> main(List<String> args) async {
   // Инициализация сервисов до первого кадра
   await ApiClient().init();
   await SettingsService().init();
+  await SplitTunnelService().init();
   await AppLockService().init();
   await OnboardingService().init();
   await ImportService().init();

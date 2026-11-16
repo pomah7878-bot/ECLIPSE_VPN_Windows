@@ -63,6 +63,7 @@ class ConfigGenerator {
   static Map<String, dynamic>? generate({
     required String link,
     required RoutingMode mode,
+    List<String> splitExclude = const [],
   }) {
     final proxy = parseLink(link);
     if (proxy == null) return null;
@@ -83,6 +84,14 @@ class ConfigGenerator {
         'outbound': 'direct',
       },
     ];
+
+    if (splitExclude.isNotEmpty) {
+      routeRules.add({
+        'process_name': splitExclude,
+        'action': 'route',
+        'outbound': 'direct',
+      });
+    }
 
     if (mode == RoutingMode.smart) {
       routeRules.add({
