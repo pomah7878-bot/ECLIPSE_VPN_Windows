@@ -11,6 +11,7 @@ import 'core/services/app_lock_service.dart';
 import 'core/services/auto_connect_service.dart';
 import 'core/services/deeplink_service.dart';
 import 'core/services/import_service.dart';
+import 'core/services/kill_switch_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/onboarding_service.dart';
 import 'core/services/session_service.dart';
@@ -57,6 +58,7 @@ Future<void> main(List<String> args) async {
   await OnboardingService().init();
   await ImportService().init();
   await NotificationService().init();
+  await KillSwitchService().recoverOnStartup();
   launchAtStartup.setup(appName: 'ECLIPSE VPN', appPath: Platform.resolvedExecutable);
   await DeepLinkService.instance.startReceiver();
   DeepLinkService.instance.imports.listen((value) {
@@ -110,6 +112,9 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
           'ECLIPSE VPN подключён',
           status.server.isEmpty ? 'Трафик защищён' : 'Сервер: ${status.server}',
         );
+        unawaited(KillSwitchService().onConnected().catchError((Object e) {
+          NotificationService().show('Kill Switch', 'Не удалось включить защиту: $e');
+        }));
         break;
       case VpnState.disconnected:
         NotificationService().show('ECLIPSE VPN отключён', 'Трафик снова идёт напрямую');
@@ -148,6 +153,7 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
   }
 
   Future<void> _quit() async {
+    await KillSwitchService().onExit();
     await _vpn.disconnect();
     exit(0);
   }

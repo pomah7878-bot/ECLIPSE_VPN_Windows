@@ -8,6 +8,7 @@ import '../../../core/services/app_lock_service.dart';
 import '../../../core/services/auto_connect_service.dart';
 import '../../../core/services/config_generator.dart';
 import '../../../core/services/import_service.dart';
+import '../../../core/services/kill_switch_service.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/settings_service.dart';
@@ -33,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _autostart = false;
   bool _autoconnect = false;
   bool _notifications = true;
+  bool _killSwitch = false;
   bool _checkingUpdate = false;
 
   @override
@@ -41,6 +43,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _autostart = SettingsService().autostartEnabled;
     _autoconnect = SettingsService().autoConnectEnabled;
     _notifications = SettingsService().notificationsEnabled;
+    _killSwitch = SettingsService().killSwitchEnabled;
+  }
+
+  Future<void> _toggleKillSwitch(bool value) async {
+    if (value) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.cardDark,
+          title: const Text('Включить Kill Switch?'),
+          content: const Text(
+            'Пока защита активна, интернет на компьютере будет доступен только через ECLIPSE. '
+            'Если приложение аварийно завершится, запустите его снова — защита снимется автоматически.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Включить')),
+          ],
+        ),
+      );
+      if (ok != true) {
+        if (mounted) setState(() => _killSwitch = false);
+        return;
+      }
+      try {
+        await KillSwitchService().enable();
+        _snack(_killSwitchOnConnectMessage());
+      } catch (e) {
+        _snack('$e');
+      }
+    } else {
+      try {
+        await KillSwitchService().disable();
+        _snack('Kill Switch выключен');
+      } catch (e) {
+        _snack('$e');
+      }
+    }
+    if (mounted) setState(() => _killSwitch = SettingsService().killSwitchEnabled);
+  }
+
+  String _killSwitchOnConnectMessage() {
+    return 'Kill Switch включён. Защита начнёт действовать после подключения VPN.';
   }
 
   Future<void> _toggleNotifications(bool value) async {
@@ -303,6 +348,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           _section('Безопасность'),
+          _tile(
+            icon: Icons.shield_outlined,
+            title: 'Kill Switch',
+            subtitle: _killSwitch ? 'Включён — трафик только через VPN' : 'Блокировать интернет при обрыве VPN',
+            trailing: Switch(
+              value: _killSwitch,
+              activeThumbColor: AppTheme.goldAccent,
+              onChanged: _toggleKillSwitch,
+            ),
+          ),
           _tile(
             icon: Icons.lock_outline,
             title: 'Блокировка приложения',

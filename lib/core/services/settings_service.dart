@@ -14,6 +14,7 @@ class SettingsService {
   static const _keyAutostart = 'autostart_enabled';
   static const _keyAutoConnect = 'autoconnect_enabled';
   static const _keyNotifications = 'notifications_enabled';
+  static const _keyKillSwitch = 'kill_switch_enabled';
   static const _keyDeviceId = 'device_id';
 
   SharedPreferences? _prefs;
@@ -21,12 +22,14 @@ class SettingsService {
   bool _autostart = false;
   bool _autoConnect = false;
   bool _notifications = true;
+  bool _killSwitch = false;
   String _deviceId = '';
 
   RoutingMode get routingMode => _routingMode;
   bool get autostartEnabled => _autostart;
   bool get autoConnectEnabled => _autoConnect;
   bool get notificationsEnabled => _notifications;
+  bool get killSwitchEnabled => _killSwitch;
 
   /// Стабильный идентификатор устройства (шлётся в X-HWID при запросе подписки).
   String get deviceId => _deviceId;
@@ -38,6 +41,7 @@ class SettingsService {
     _autostart = _prefs?.getBool(_keyAutostart) ?? false;
     _autoConnect = _prefs?.getBool(_keyAutoConnect) ?? false;
     _notifications = _prefs?.getBool(_keyNotifications) ?? true;
+    _killSwitch = _prefs?.getBool(_keyKillSwitch) ?? false;
     _deviceId = _prefs?.getString(_keyDeviceId) ?? '';
     if (_deviceId.isEmpty) {
       _deviceId = _generateDeviceId();
@@ -71,5 +75,10 @@ class SettingsService {
   Future<void> setNotifications(bool value) async {
     _notifications = value;
     await _prefs?.setBool(_keyNotifications, value);
+  }
+
+  Future<void> setKillSwitch(bool value) async {
+    _killSwitch = value;
+    await _prefs?.setBool(_keyKillSwitch, value);
   }
 }
