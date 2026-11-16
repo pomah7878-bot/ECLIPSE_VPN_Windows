@@ -84,7 +84,7 @@ class PowerButton extends StatelessWidget {
                         letterSpacing: 1.2,
                         color: isConnected
                             ? AppTheme.goldAccent
-                            : AppTheme.textPrimary,
+                            : Colors.white,
                       ),
                     ),
                     if (isConnected)
@@ -95,7 +95,7 @@ class PowerButton extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
+                            color: Colors.white,
                           ),
                         ),
                       ),
