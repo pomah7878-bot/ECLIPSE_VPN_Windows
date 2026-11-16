@@ -855,7 +855,7 @@ class _TariffCard extends StatelessWidget {
               ],
             ),
           ),
-          const const SizedBox(width: 12),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
