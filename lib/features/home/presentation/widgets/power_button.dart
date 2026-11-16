@@ -92,7 +92,7 @@ class PowerButton extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           _uptimeText,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
