@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'core/api/api_client.dart';
@@ -42,6 +43,7 @@ Future<void> main(List<String> args) async {
   // Инициализация сервисов до первого кадра
   await ApiClient().init();
   await SettingsService().init();
+  launchAtStartup.setup(appName: 'ECLIPSE VPN', appPath: Platform.resolvedExecutable);
   await DeepLinkService.instance.startReceiver();
   await DeepLinkService.registerProtocolHandler();
 
