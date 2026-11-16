@@ -98,7 +98,7 @@ class _KeysScreenState extends State<KeysScreen> {
     final expiry = days == null ? 'бессрочно' : (days < 0 ? 'истёк' : 'осталось $days дн.');
     return InkWell(
       onTap: () async {
-        await Navigator.push(context, MaterialPageRoute(builder: (_) => KeyDetailScreen(key: key)));
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => KeyDetailScreen(accountKey: key)));
         _load();
       },
       borderRadius: BorderRadius.circular(20),
@@ -142,8 +142,8 @@ class _KeysScreenState extends State<KeysScreen> {
 /// Карточка ключа: QR, ссылка подписки, устройства, переименование,
 /// удаление и продление.
 class KeyDetailScreen extends StatefulWidget {
-  final AccountKeyDto key;
-  const KeyDetailScreen({super.key, required this.key});
+  final AccountKeyDto accountKey;
+  const KeyDetailScreen({super.key, required this.accountKey});
 
   @override
   State<KeyDetailScreen> createState() => _KeyDetailScreenState();
@@ -166,7 +166,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
 
   Future<void> _loadDevices() async {
     try {
-      final devices = await _keys.getKeyDevices(widget.key.keyId);
+      final devices = await _keys.getKeyDevices(widget.accountKey.keyId);
       if (mounted) {
         setState(() {
           _devices = devices;
@@ -179,7 +179,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
   }
 
   Future<void> _rename() async {
-    final controller = TextEditingController(text: widget.key.displayName);
+    final controller = TextEditingController(text: widget.accountKey.displayName);
     final name = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -193,7 +193,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
       ),
     );
     if (name == null || name.isEmpty) return;
-    final error = await _account.renameKey(widget.key.keyId, name);
+    final error = await _account.renameKey(widget.accountKey.keyId, name);
     if (!mounted) return;
     setState(() => _message = error ?? 'Название обновлено');
   }
@@ -212,7 +212,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
       ),
     );
     if (ok != true) return;
-    final error = await _account.deleteKey(widget.key.keyId);
+    final error = await _account.deleteKey(widget.accountKey.keyId);
     if (!mounted) return;
     if (error == null) {
       Navigator.pop(context, true);
@@ -227,7 +227,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
       _message = 'Создаём платёж…';
     });
     try {
-      final order = await _shop.createKeyRenewal(widget.key.keyId);
+      final order = await _shop.createKeyRenewal(widget.accountKey.keyId);
       final url = order.qrUrl;
       if (url != null && url.isNotEmpty) {
         final uri = Uri.tryParse(url);
@@ -257,7 +257,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final key = widget.key;
+    final key = widget.accountKey;
     final subUrl = key.subUrl;
     return Scaffold(
       backgroundColor: AppTheme.eclipseBlack,

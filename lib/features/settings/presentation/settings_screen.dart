@@ -3,6 +3,7 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/api/auth_api.dart';
+import '../../../core/services/config_generator.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/settings_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -87,7 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: _autostart ? 'Включён' : 'Выключен',
             trailing: Switch(
               value: _autostart,
-              activeColor: AppTheme.goldAccent,
+              activeThumbColor: AppTheme.goldAccent,
               onChanged: _toggleAutostart,
             ),
           ),
