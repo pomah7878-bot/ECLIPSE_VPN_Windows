@@ -42,9 +42,12 @@ class SplitTunnelService {
   }
 
   Future<void> add(String process) async {
-    final name = process.trim().toLowerCase();
+    final name = process.trim();
     if (name.isEmpty) return;
-    if (!_processes.contains(name)) {
+    final exists = _processes.any(
+      (p) => p.toLowerCase() == name.toLowerCase(),
+    );
+    if (!exists) {
       _processes.add(name);
       await _prefs?.setStringList(_listKey, _processes);
     }
