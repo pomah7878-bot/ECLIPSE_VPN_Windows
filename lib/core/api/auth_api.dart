@@ -239,6 +239,7 @@ class AccountKeyDto {
   final bool isActive;
   final String? serverName;
   final String? subUrl;
+  final CdnInfo? cdn;
 
   AccountKeyDto({
     required this.keyId,
@@ -249,9 +250,11 @@ class AccountKeyDto {
     required this.isActive,
     this.serverName,
     this.subUrl,
+    this.cdn,
   });
 
   factory AccountKeyDto.fromJson(Map<String, dynamic> json) {
+    final cdnJson = json['cdn'];
     return AccountKeyDto(
       keyId: _asInt(json['key_id']),
       displayName: json['display_name']?.toString() ?? 'Ключ #${json['key_id']}',
@@ -263,6 +266,7 @@ class AccountKeyDto {
       isActive: json['is_active'] ?? true,
       serverName: json['server_name']?.toString(),
       subUrl: json['sub_url']?.toString(),
+      cdn: cdnJson is Map ? CdnInfo.fromJson(Map<String, dynamic>.from(cdnJson)) : null,
     );
   }
 
@@ -277,6 +281,59 @@ class AccountKeyDto {
 
   double? get trafficLimitGb =>
       trafficLimit > 0 ? trafficLimit / (1024 * 1024 * 1024) : null;
+}
+
+/// CDN-пакет ключа (обход белых списков).
+class CdnInfo {
+  final bool offered;
+  final int priceCents;
+  final String? priceText;
+  final int gb;
+  final int days;
+  final String? packStatus;
+  final int usedBytes;
+  final int limitBytes;
+  final String? expiresAt;
+  final bool isFree;
+  final int? balanceCents;
+
+  CdnInfo({
+    required this.offered,
+    required this.priceCents,
+    this.priceText,
+    required this.gb,
+    required this.days,
+    this.packStatus,
+    required this.usedBytes,
+    required this.limitBytes,
+    this.expiresAt,
+    required this.isFree,
+    this.balanceCents,
+  });
+
+  factory CdnInfo.fromJson(Map<String, dynamic> json) {
+    final pack = json['pack'];
+    final packMap = pack is Map ? Map<String, dynamic>.from(pack) : null;
+    return CdnInfo(
+      offered: json['offered'] == true,
+      priceCents: _asInt(json['price_cents']),
+      priceText: json['price_text']?.toString(),
+      gb: _asInt(json['gb']),
+      days: _asInt(json['days']),
+      packStatus: packMap?['status']?.toString(),
+      usedBytes: _asInt(packMap?['used_bytes']),
+      limitBytes: _asInt(packMap?['limit_bytes']),
+      expiresAt: packMap?['expires_at']?.toString(),
+      isFree: packMap?['is_free'] == true,
+      balanceCents: json['balance_cents'] == null ? null : _asInt(json['balance_cents']),
+    );
+  }
+
+  static int _asInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
+
+  bool get hasPack => packStatus != null && packStatus!.isNotEmpty;
+  bool get canBuy => offered && priceCents > 0;
+  String get priceRub => (priceCents / 100).toStringAsFixed(0);
 }
 
 class LinkCodeResponse {

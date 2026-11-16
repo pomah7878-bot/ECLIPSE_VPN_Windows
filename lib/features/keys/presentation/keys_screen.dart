@@ -156,6 +156,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
   KeyDevicesResponse? _devices;
   bool _loadingDevices = true;
   bool _renewing = false;
+  bool _buyingCdn = false;
   String? _message;
 
   @override
@@ -255,6 +256,23 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
     }
   }
 
+  Future<void> _buyCdn() async {
+    setState(() {
+      _buyingCdn = true;
+      _message = 'Покупаем CDN-пакет…';
+    });
+    final error = await _account.buyCdn(widget.accountKey.keyId);
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.pop(context, true);
+      return;
+    }
+    setState(() {
+      _buyingCdn = false;
+      _message = error;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final key = widget.accountKey;
@@ -335,6 +353,40 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
                     )),
             ],
           )),
+          const SizedBox(height: 14),
+          if (key.cdn != null && (key.cdn!.hasPack || key.cdn!.canBuy))
+            _card(Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('CDN-пакет', style: TextStyle(fontWeight: FontWeight.w700)),
+                const SizedBox(height: 8),
+                if (key.cdn!.hasPack) ...[
+                  Text(
+                    'Статус: ${key.cdn!.packStatus}'
+                    '${key.cdn!.expiresAt != null ? ' · до ${key.cdn!.expiresAt}' : ''}',
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                  if (key.cdn!.limitBytes > 0)
+                    Text(
+                      'Трафик: ${(key.cdn!.usedBytes / (1024 * 1024 * 1024)).toStringAsFixed(2)}'
+                      ' / ${(key.cdn!.limitBytes / (1024 * 1024 * 1024)).toStringAsFixed(0)} ГБ',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    ),
+                  const SizedBox(height: 8),
+                ],
+                if (key.cdn!.canBuy) ...[
+                  Text(
+                    '${key.cdn!.gb} ГБ на ${key.cdn!.days} дн. · ${key.cdn!.priceRub} ₽',
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: _buyingCdn ? null : _buyCdn,
+                    child: Text(_buyingCdn ? 'Покупаем…' : 'Купить CDN за ${key.cdn!.priceRub} ₽'),
+                  ),
+                ],
+              ],
+            )),
           const SizedBox(height: 14),
           _card(Column(
             children: [

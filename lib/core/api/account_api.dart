@@ -64,6 +64,23 @@ class AccountApi {
     }
   }
 
+  /// POST /public/account/key/cdn/buy
+  Future<String?> buyCdn(int keyId) async {
+    try {
+      final response = await _client.dio.post(
+        '/public/account/key/cdn/buy',
+        data: {'key_id': keyId},
+      );
+      if (response.statusCode == 200 && response.data['ok'] == true) {
+        return null;
+      }
+      return response.data['message']?.toString() ?? 'Не удалось купить CDN-пакет';
+    } catch (e) {
+      final data = _errorData(e);
+      return data?['message']?.toString() ?? 'Не удалось купить CDN-пакет';
+    }
+  }
+
   /// POST /public/account/key/delete
   Future<String?> deleteKey(int keyId) async {
     try {
