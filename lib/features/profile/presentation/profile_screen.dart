@@ -187,6 +187,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 8),
                 Text('Баланс: ${session.balanceHuman ?? '0 ₽'}',
                     style: const TextStyle(fontSize: 14, color: AppTheme.goldAccent, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                Text(
+                  session.phone?.isNotEmpty == true
+                      ? 'Телефон: ${session.phone}'
+                      : 'Телефон не привязан',
+                  style: const TextStyle(fontSize: 11.5, color: AppTheme.textSecondary),
+                ),
+                if (session.email?.isNotEmpty == true && session.email != name) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Email: ${session.email}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5, color: AppTheme.textMuted),
+                  ),
+                ],
               ],
             ),
           ),
