@@ -9,19 +9,25 @@ class ImportService {
   ImportService._internal();
 
   static const _key = 'imported_subscription_url';
+  static const _bodyKey = 'imported_subscription_body';
 
   SharedPreferences? _prefs;
   String? _url;
+  String? _body;
 
   final ValueNotifier<bool> hasImport = ValueNotifier<bool>(false);
 
   String? get url => _url;
-  bool get isImported => _url != null && _url!.isNotEmpty;
+  String? get body => _body;
+  bool get isImported =>
+      (_url != null && _url!.isNotEmpty) || (_body != null && _body!.isNotEmpty);
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
     final value = _prefs?.getString(_key);
+    final rawBody = _prefs?.getString(_bodyKey);
     _url = (value == null || value.isEmpty) ? null : value;
+    _body = (rawBody == null || rawBody.isEmpty) ? null : rawBody;
     hasImport.value = isImported;
   }
 
@@ -29,13 +35,28 @@ class ImportService {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return;
     _url = trimmed;
+    _body = null;
     await _prefs?.setString(_key, trimmed);
+    await _prefs?.remove(_bodyKey);
+    hasImport.value = true;
+  }
+
+  /// Тело подписки, полученное с телефона по QR (base64 или список ссылок).
+  Future<void> setBody(String value) async {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+    _body = trimmed;
+    _url = null;
+    await _prefs?.setString(_bodyKey, trimmed);
+    await _prefs?.remove(_key);
     hasImport.value = true;
   }
 
   Future<void> clear() async {
     _url = null;
+    _body = null;
     await _prefs?.remove(_key);
+    await _prefs?.remove(_bodyKey);
     hasImport.value = false;
   }
 

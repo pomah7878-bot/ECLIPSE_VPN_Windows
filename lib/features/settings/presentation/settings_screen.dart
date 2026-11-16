@@ -13,6 +13,7 @@ import '../../../core/services/settings_service.dart';
 import '../../../core/services/update_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../import/presentation/import_screen.dart';
+import '../../import/presentation/tv_pair_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
 import '../../support/presentation/support_screen.dart';
 
@@ -248,6 +249,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ImportScreen()),
+              );
+              if (mounted) setState(() {});
+            },
+          ),
+          _tile(
+            icon: Icons.qr_code_2,
+            title: 'Перенос с телефона',
+            subtitle: 'Получить подписку по QR-коду',
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TvPairScreen()),
               );
               if (mounted) setState(() {});
             },

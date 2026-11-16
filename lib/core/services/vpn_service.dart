@@ -113,8 +113,20 @@ class VpnService {
       // 1. Импортированная подписка или сессия и активный ключ
       _setState(VpnState.connecting, 'Проверка ключей...');
       final importedUrl = ImportService().url;
+      final importedBody = ImportService().body;
       String link = '';
-      if (importedUrl != null && importedUrl.isNotEmpty) {
+      if (importedBody != null && importedBody.isNotEmpty) {
+        _setState(VpnState.connecting, 'Получение сервера...');
+        _server = 'Подписка с телефона';
+        final servers = SubscriptionService.parseBody(importedBody);
+        if (servers.isEmpty) {
+          _setState(VpnState.error, 'В подписке с телефона нет серверов');
+          return false;
+        }
+        link = servers.first.link;
+        if (servers.first.name.isNotEmpty) _server = servers.first.name;
+        _log('Импорт с телефона: серверов ${servers.length}, выбран «$_server»');
+      } else if (importedUrl != null && importedUrl.isNotEmpty) {
         _setState(VpnState.connecting, 'Получение сервера...');
         _server = 'Импортированная подписка';
         if (importedUrl.startsWith('http://') || importedUrl.startsWith('https://')) {
