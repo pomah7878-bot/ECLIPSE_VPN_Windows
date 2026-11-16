@@ -2,7 +2,7 @@
 ; Требуется Inno Setup 6.2+
 
 #define MyAppName "ECLIPSE VPN"
-#define MyAppVersion "0.2.3"
+#define MyAppVersion "0.2.4"
 #define MyAppPublisher "ECLIPSE"
 #define MyAppURL "https://github.com/pomah7878-bot/ECLIPSE_VPN"
 #define MyAppExeName "eclipse_vpn_windows.exe"
