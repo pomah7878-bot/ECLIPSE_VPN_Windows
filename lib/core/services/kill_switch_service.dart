@@ -137,20 +137,27 @@ class KillSwitchService {
   Future<void> _restore({required bool quiet, bool force = false}) async {
     if (!Platform.isWindows) return;
     if (!_active && !force) return;
+    var restored = false;
     try {
       await _deleteRules();
-      await Process.run('netsh', [
+      final result = await Process.run('netsh', [
         'advfirewall',
         'set',
         'allprofiles',
         'firewallpolicy',
         'blockinbound,allowoutbound',
       ]);
+      restored = result.exitCode == 0;
+      if (!restored) {
+        throw const KillSwitchException('Firewall не подтвердил снятие блокировки');
+      }
     } catch (e) {
       if (!quiet) throw KillSwitchException('Не удалось снять блокировку: $e');
     } finally {
-      _active = false;
-      await _setMarker(false);
+      _active = !restored;
+      // Маркер снимаем только при успешном восстановлении: иначе следующий
+      // запуск должен повторить попытку, а не оставить пользователя без сети.
+      if (restored) await _setMarker(false);
     }
   }
 
