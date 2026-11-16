@@ -7,7 +7,9 @@ import 'package:window_manager/window_manager.dart';
 import 'core/api/api_client.dart';
 import 'core/api/auth_api.dart';
 import 'core/services/app_lock_service.dart';
+import 'core/services/auto_connect_service.dart';
 import 'core/services/deeplink_service.dart';
+import 'core/services/import_service.dart';
 import 'core/services/onboarding_service.dart';
 import 'core/services/session_service.dart';
 import 'core/services/settings_service.dart';
@@ -49,8 +51,12 @@ Future<void> main(List<String> args) async {
   await SettingsService().init();
   await AppLockService().init();
   await OnboardingService().init();
+  await ImportService().init();
   launchAtStartup.setup(appName: 'ECLIPSE VPN', appPath: Platform.resolvedExecutable);
   await DeepLinkService.instance.startReceiver();
+  DeepLinkService.instance.imports.listen((value) {
+    if (ImportService.looksSupported(value)) ImportService().setUrl(value);
+  });
   await DeepLinkService.registerProtocolHandler();
 
   // Тихая проверка сохранённой cookie-сессии
@@ -84,11 +90,13 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
     windowManager.setPreventClose(true);
     _tray.onQuit = _quit;
     _tray.init();
+    AutoConnectService().start();
   }
 
   @override
   void dispose() {
     windowManager.removeListener(this);
+    AutoConnectService().stop();
     _tray.dispose();
     _vpn.dispose();
     super.dispose();

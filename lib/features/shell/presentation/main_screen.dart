@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/services/import_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../devices/presentation/devices_screen.dart';
 import '../../home/presentation/home_screen.dart';
+import '../../import/presentation/import_screen.dart';
 import '../../profile/presentation/profile_screen.dart';
 import '../../purchase/presentation/purchase_screen.dart';
 import '../../support/presentation/support_screen.dart';
@@ -33,16 +35,31 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  void _openImport() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ImportScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.eclipseBlack,
-      body: ValueListenableBuilder<bool>(
-        valueListenable: SessionService.loggedIn,
-        builder: (_, loggedIn, __) {
+      body: AnimatedBuilder(
+        animation: Listenable.merge([
+          SessionService.loggedIn,
+          ImportService().hasImport,
+        ]),
+        builder: (_, __) {
+          final loggedIn = SessionService.loggedIn.value;
+          final imported = ImportService().hasImport.value;
+          final active = loggedIn || imported;
           final screens = <Widget>[
-            loggedIn
-                ? HomeScreen(onOpenAccount: _openProfile)
+            active
+                ? HomeScreen(
+                    onOpenAccount: loggedIn ? _openProfile : _openImport,
+                  )
                 : LoginContent(onLoggedIn: () => _goTab(0)),
             const PurchaseScreen(),
             const DevicesScreen(),

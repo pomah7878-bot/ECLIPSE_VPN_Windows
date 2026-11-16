@@ -5,11 +5,14 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 
 import '../../../core/api/auth_api.dart';
 import '../../../core/services/app_lock_service.dart';
+import '../../../core/services/auto_connect_service.dart';
 import '../../../core/services/config_generator.dart';
+import '../../../core/services/import_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/settings_service.dart';
 import '../../../core/services/update_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../import/presentation/import_screen.dart';
 import '../../modes/presentation/modes_screen.dart';
 import '../../support/presentation/support_screen.dart';
 
@@ -24,12 +27,20 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _auth = AuthApi();
   bool _autostart = false;
+  bool _autoconnect = false;
   bool _checkingUpdate = false;
 
   @override
   void initState() {
     super.initState();
     _autostart = SettingsService().autostartEnabled;
+    _autoconnect = SettingsService().autoConnectEnabled;
+  }
+
+  Future<void> _toggleAutoConnect(bool value) async {
+    await SettingsService().setAutoConnect(value);
+    if (mounted) setState(() => _autoconnect = value);
+    if (value) await AutoConnectService().tryNow();
   }
 
   Future<String?> _askPin(String title) async {
@@ -218,6 +229,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               activeThumbColor: AppTheme.goldAccent,
               onChanged: _toggleAutostart,
             ),
+          ),
+          _tile(
+            icon: Icons.bolt,
+            title: 'Автоподключение',
+            subtitle: _autoconnect ? 'VPN включается при появлении сети' : 'Выключено',
+            trailing: Switch(
+              value: _autoconnect,
+              activeThumbColor: AppTheme.goldAccent,
+              onChanged: _toggleAutoConnect,
+            ),
+          ),
+          _tile(
+            icon: Icons.link,
+            title: 'Импорт подписки',
+            subtitle: ImportService().isImported ? 'Импортированная подписка активна' : 'Ссылка или конфиг',
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ImportScreen()),
+              );
+              if (mounted) setState(() {});
+            },
           ),
           _section('Безопасность'),
           _tile(

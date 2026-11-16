@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../api/auth_api.dart';
 import '../api/keys_api.dart';
 import 'config_generator.dart';
+import 'import_service.dart';
 import 'settings_service.dart';
 import 'subscription_service.dart';
 
@@ -109,44 +110,71 @@ class VpnService {
         return false;
       }
 
-      // 1. Сессия и активный ключ
+      // 1. Импортированная подписка или сессия и активный ключ
       _setState(VpnState.connecting, 'Проверка ключей...');
-      final session = await AuthApi().getSession();
-      if (session == null || !session.loggedIn || session.keys.isEmpty) {
-        _setState(VpnState.error, 'Войдите в личный кабинет и купите ключ');
-        return false;
-      }
-
-      final key = session.keys.firstWhere(
-        (k) => k.isActive,
-        orElse: () => session.keys.first,
-      );
-
-      // 2. Сервер: подписка по sub_url (как в Android), fallback — inbounds API
-      _setState(VpnState.connecting, 'Получение сервера...');
+      final importedUrl = ImportService().url;
       String link = '';
-      _server = key.serverName ?? '';
-
-      final subUrl = key.subUrl;
-      if (subUrl != null && subUrl.isNotEmpty) {
-        try {
-          final servers = await SubscriptionService().fetch(subUrl);
-          if (servers.isNotEmpty) {
-            link = servers.first.link;
-            if (servers.first.name.isNotEmpty) _server = servers.first.name;
-            _log('Подписка: серверов ${servers.length}, выбран «$_server»');
+      if (importedUrl != null && importedUrl.isNotEmpty) {
+        _setState(VpnState.connecting, 'Получение сервера...');
+        _server = 'Импортированная подписка';
+        if (importedUrl.startsWith('http://') || importedUrl.startsWith('https://')) {
+          try {
+            final servers = await SubscriptionService().fetch(importedUrl);
+            if (servers.isNotEmpty) {
+              link = servers.first.link;
+              if (servers.first.name.isNotEmpty) _server = servers.first.name;
+              _log('Импорт: серверов ${servers.length}, выбран «$_server»');
+            }
+          } catch (e) {
+            _log('Импортированная подписка не загрузилась: $e');
+            _setState(VpnState.error, 'Импортированная подписка недоступна');
+            return false;
           }
-        } catch (e) {
-          _log('Подписка не загрузилась ($e), пробую inbounds API');
+          if (link.isEmpty) {
+            _setState(VpnState.error, 'В импортированной подписке нет серверов');
+            return false;
+          }
+        } else {
+          link = importedUrl;
+          _log('Импорт: одиночный конфиг');
         }
-      }
+      } else {
+        final session = await AuthApi().getSession();
+        if (session == null || !session.loggedIn || session.keys.isEmpty) {
+          _setState(VpnState.error, 'Войдите в личный кабинет и купите ключ');
+          return false;
+        }
 
-      if (link.isEmpty) {
-        final inbounds = await KeysApi().getKeyInbounds(key.keyId);
-        if (inbounds.isNotEmpty) {
-          final inbound = inbounds.first;
-          link = inbound.link ?? inbound.config ?? '';
-          _server = inbound.remark ?? _server;
+        final key = session.keys.firstWhere(
+          (k) => k.isActive,
+          orElse: () => session.keys.first,
+        );
+
+        // 2. Сервер: подписка по sub_url (как в Android), fallback — inbounds API
+        _setState(VpnState.connecting, 'Получение сервера...');
+        _server = key.serverName ?? '';
+
+        final subUrl = key.subUrl;
+        if (subUrl != null && subUrl.isNotEmpty) {
+          try {
+            final servers = await SubscriptionService().fetch(subUrl);
+            if (servers.isNotEmpty) {
+              link = servers.first.link;
+              if (servers.first.name.isNotEmpty) _server = servers.first.name;
+              _log('Подписка: серверов ${servers.length}, выбран «$_server»');
+            }
+          } catch (e) {
+            _log('Подписка не загрузилась ($e), пробую inbounds API');
+          }
+        }
+
+        if (link.isEmpty) {
+          final inbounds = await KeysApi().getKeyInbounds(key.keyId);
+          if (inbounds.isNotEmpty) {
+            final inbound = inbounds.first;
+            link = inbound.link ?? inbound.config ?? '';
+            _server = inbound.remark ?? _server;
+          }
         }
       }
 

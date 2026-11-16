@@ -18,11 +18,15 @@ class DeepLinkService {
 
   HttpServer? _server;
   final _codeController = StreamController<String>.broadcast();
+  final _importController = StreamController<String>.broadcast();
   String? _pendingCode;
   DateTime? _pendingCodeAt;
 
   /// Поток обменных кодов из deep-link'ов.
   Stream<String> get codes => _codeController.stream;
+
+  /// Поток импортированных подписок из eclipsevpn://import?url=...
+  Stream<String> get imports => _importController.stream;
 
   /// Код, пришедший до того, как OAuth-поток начал его ждать.
   /// Коды живут 90 секунд — запоздавшие от старых вкладок отбрасываются.
@@ -54,6 +58,16 @@ class DeepLinkService {
     if (uri == null) return null;
     final code = uri.queryParameters['code'];
     return (code == null || code.isEmpty) ? null : code;
+  }
+
+  /// Извлекает ссылку подписки из eclipsevpn://import?url=...
+  static String? parseImport(String url) {
+    if (!url.startsWith(scheme)) return null;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return null;
+    if (uri.host != 'import') return null;
+    final value = uri.queryParameters['url'];
+    return (value == null || value.isEmpty) ? null : value;
   }
 
   /// Регистрирует обработчик протокола eclipsevpn:// в HKCU (без админ-прав).
@@ -95,6 +109,10 @@ class DeepLinkService {
     _server!.listen((request) async {
       final url = request.uri.queryParameters['url'];
       if (request.uri.path == '/deeplink' && url != null) {
+        final imported = parseImport(url);
+        if (imported != null && !_importController.isClosed) {
+          _importController.add(imported);
+        }
         final code = parseCode(url);
         if (code != null && !_codeController.isClosed) {
           _pendingCode = code;
@@ -140,5 +158,6 @@ class DeepLinkService {
   Future<void> dispose() async {
     await _server?.close(force: true);
     await _codeController.close();
+    await _importController.close();
   }
 }

@@ -12,15 +12,18 @@ class SettingsService {
 
   static const _keyRoutingMode = 'routing_mode';
   static const _keyAutostart = 'autostart_enabled';
+  static const _keyAutoConnect = 'autoconnect_enabled';
   static const _keyDeviceId = 'device_id';
 
   SharedPreferences? _prefs;
   RoutingMode _routingMode = RoutingMode.smart;
   bool _autostart = false;
+  bool _autoConnect = false;
   String _deviceId = '';
 
   RoutingMode get routingMode => _routingMode;
   bool get autostartEnabled => _autostart;
+  bool get autoConnectEnabled => _autoConnect;
 
   /// Стабильный идентификатор устройства (шлётся в X-HWID при запросе подписки).
   String get deviceId => _deviceId;
@@ -30,6 +33,7 @@ class SettingsService {
     _prefs = await SharedPreferences.getInstance();
     _routingMode = RoutingModeX.fromId(_prefs?.getString(_keyRoutingMode));
     _autostart = _prefs?.getBool(_keyAutostart) ?? false;
+    _autoConnect = _prefs?.getBool(_keyAutoConnect) ?? false;
     _deviceId = _prefs?.getString(_keyDeviceId) ?? '';
     if (_deviceId.isEmpty) {
       _deviceId = _generateDeviceId();
@@ -53,5 +57,10 @@ class SettingsService {
   Future<void> setAutostart(bool value) async {
     _autostart = value;
     await _prefs?.setBool(_keyAutostart, value);
+  }
+
+  Future<void> setAutoConnect(bool value) async {
+    _autoConnect = value;
+    await _prefs?.setBool(_keyAutoConnect, value);
   }
 }
