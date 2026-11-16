@@ -22,6 +22,7 @@ class KillSwitchService {
   static const _ruleDnsUdp = 'ECLIPSE VPN Kill Switch DNS UDP';
   static const _ruleDnsTcp = 'ECLIPSE VPN Kill Switch DNS TCP';
   static const _ruleDhcp = 'ECLIPSE VPN Kill Switch DHCP';
+  static const _ruleLan = 'ECLIPSE VPN Kill Switch LAN';
   static const _markerKey = 'kill_switch_active';
 
   bool _active = false;
@@ -109,7 +110,8 @@ class KillSwitchService {
     final okDns = await _addServiceRule(_ruleDnsUdp, svchost, 'udp', 53) &&
         await _addServiceRule(_ruleDnsTcp, svchost, 'tcp', 53);
     final okDhcp = await _addServiceRule(_ruleDhcp, svchost, 'udp', 67);
-    if (!okApp || !okCore || !okDns || !okDhcp) {
+    final okLan = await _addLanRule();
+    if (!okApp || !okCore || !okDns || !okDhcp || !okLan) {
       await _deleteRules();
       throw const KillSwitchException('Не удалось создать правила Firewall');
     }
@@ -150,7 +152,7 @@ class KillSwitchService {
   }
 
   Future<void> _deleteRules() async {
-    for (final name in [_ruleApp, _ruleCore, _ruleDnsUdp, _ruleDnsTcp, _ruleDhcp]) {
+    for (final name in [_ruleApp, _ruleCore, _ruleDnsUdp, _ruleDnsTcp, _ruleDhcp, _ruleLan]) {
       await Process.run('netsh', [
         'advfirewall',
         'firewall',
@@ -194,6 +196,22 @@ class KillSwitchService {
       'program="$program"',
       'protocol=$protocol',
       'remoteport=$remotePort',
+      'enable=yes',
+      'profile=any',
+    ]);
+    return result.exitCode == 0;
+  }
+
+  Future<bool> _addLanRule() async {
+    final result = await Process.run('netsh', [
+      'advfirewall',
+      'firewall',
+      'add',
+      'rule',
+      'name=$_ruleLan',
+      'dir=out',
+      'action=allow',
+      'remoteip=localsubnet',
       'enable=yes',
       'profile=any',
     ]);

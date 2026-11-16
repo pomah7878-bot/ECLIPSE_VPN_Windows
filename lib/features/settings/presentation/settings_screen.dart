@@ -351,7 +351,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _tile(
             icon: Icons.shield_outlined,
             title: 'Kill Switch',
-            subtitle: _killSwitch ? 'Включён — трафик только через VPN' : 'Блокировать интернет при обрыве VPN',
+            subtitle: !_killSwitch
+                ? 'Блокировать интернет при обрыве VPN'
+                : (KillSwitchService().active
+                    ? 'Активен — трафик только через VPN'
+                    : 'Включится после подключения VPN'),
             trailing: Switch(
               value: _killSwitch,
               activeThumbColor: AppTheme.goldAccent,
