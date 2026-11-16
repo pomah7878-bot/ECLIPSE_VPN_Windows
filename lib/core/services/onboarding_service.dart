@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Первый запуск: короткий онбординг, как в Android.
 class OnboardingService {
-  OnboardingService._();
   static final OnboardingService _instance = OnboardingService._internal();
   factory OnboardingService() => _instance;
   OnboardingService._internal();

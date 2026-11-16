@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// PIN-блокировка приложения: код хранится только как SHA-256.
 class AppLockService {
-  AppLockService._();
   static final AppLockService _instance = AppLockService._internal();
   factory AppLockService() => _instance;
   AppLockService._internal();

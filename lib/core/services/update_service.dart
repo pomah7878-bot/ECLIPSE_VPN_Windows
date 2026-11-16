@@ -9,7 +9,6 @@ import '../../features/support/presentation/support_screen.dart';
 
 /// Проверка и загрузка обновления Windows с GitHub Releases.
 class UpdateService {
-  UpdateService._();
   static final UpdateService _instance = UpdateService._internal();
   factory UpdateService() => _instance;
   UpdateService._internal();
