@@ -8,6 +8,7 @@ import '../../../core/services/app_lock_service.dart';
 import '../../../core/services/auto_connect_service.dart';
 import '../../../core/services/config_generator.dart';
 import '../../../core/services/import_service.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/services/session_service.dart';
 import '../../../core/services/settings_service.dart';
 import '../../../core/services/split_tunnel_service.dart';
@@ -31,6 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _auth = AuthApi();
   bool _autostart = false;
   bool _autoconnect = false;
+  bool _notifications = true;
   bool _checkingUpdate = false;
 
   @override
@@ -38,6 +40,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _autostart = SettingsService().autostartEnabled;
     _autoconnect = SettingsService().autoConnectEnabled;
+    _notifications = SettingsService().notificationsEnabled;
+  }
+
+  Future<void> _toggleNotifications(bool value) async {
+    await SettingsService().setNotifications(value);
+    if (mounted) setState(() => _notifications = value);
+    if (value) {
+      await NotificationService().show('ECLIPSE VPN', 'Уведомления включены');
+    }
   }
 
   Future<void> _toggleAutoConnect(bool value) async {
@@ -255,6 +266,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _autoconnect,
               activeThumbColor: AppTheme.goldAccent,
               onChanged: _toggleAutoConnect,
+            ),
+          ),
+          _tile(
+            icon: Icons.notifications_none,
+            title: 'Уведомления',
+            subtitle: _notifications ? 'Показывать состояние VPN' : 'Выключены',
+            trailing: Switch(
+              value: _notifications,
+              activeThumbColor: AppTheme.goldAccent,
+              onChanged: _toggleNotifications,
             ),
           ),
           _tile(

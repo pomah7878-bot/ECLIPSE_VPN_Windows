@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'core/services/app_lock_service.dart';
 import 'core/services/auto_connect_service.dart';
 import 'core/services/deeplink_service.dart';
 import 'core/services/import_service.dart';
+import 'core/services/notification_service.dart';
 import 'core/services/onboarding_service.dart';
 import 'core/services/session_service.dart';
 import 'core/services/settings_service.dart';
@@ -54,6 +56,7 @@ Future<void> main(List<String> args) async {
   await AppLockService().init();
   await OnboardingService().init();
   await ImportService().init();
+  await NotificationService().init();
   launchAtStartup.setup(appName: 'ECLIPSE VPN', appPath: Platform.resolvedExecutable);
   await DeepLinkService.instance.startReceiver();
   DeepLinkService.instance.imports.listen((value) {
@@ -84,6 +87,8 @@ class EclipseVPNApp extends StatefulWidget {
 class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
   final _vpn = VpnService();
   final _tray = TrayService();
+  StreamSubscription<VpnStatus>? _vpnNotifySub;
+  VpnState? _lastNotifiedState;
 
   @override
   void initState() {
@@ -92,13 +97,39 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
     windowManager.setPreventClose(true);
     _tray.onQuit = _quit;
     _tray.init();
+    _vpnNotifySub = _vpn.statusStream.listen(_onVpnStatus);
     AutoConnectService().start();
+  }
+
+  void _onVpnStatus(VpnStatus status) {
+    if (status.state == _lastNotifiedState) return;
+    _lastNotifiedState = status.state;
+    switch (status.state) {
+      case VpnState.connected:
+        NotificationService().show(
+          'ECLIPSE VPN подключён',
+          status.server.isEmpty ? 'Трафик защищён' : 'Сервер: ${status.server}',
+        );
+        break;
+      case VpnState.disconnected:
+        NotificationService().show('ECLIPSE VPN отключён', 'Трафик снова идёт напрямую');
+        break;
+      case VpnState.error:
+        NotificationService().show(
+          'Не удалось подключиться',
+          status.message.isEmpty ? 'Проверьте соединение' : status.message,
+        );
+        break;
+      default:
+        break;
+    }
   }
 
   @override
   void dispose() {
     windowManager.removeListener(this);
     AutoConnectService().stop();
+    _vpnNotifySub?.cancel();
     _tray.dispose();
     _vpn.dispose();
     super.dispose();
