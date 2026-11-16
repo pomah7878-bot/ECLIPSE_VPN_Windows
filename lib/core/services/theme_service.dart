@@ -36,7 +36,7 @@ class ThemeService {
     final raw = _prefs?.getString(_key);
     _mode = AppThemeMode.values.firstWhere(
       (m) => m.name == raw,
-      orElse: () => AppThemeMode.system,
+      orElse: () => AppThemeMode.dark,
     );
     _apply(resolve());
     _timer = Timer.periodic(const Duration(minutes: 5), (_) {
