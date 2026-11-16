@@ -6,12 +6,16 @@ import 'package:window_manager/window_manager.dart';
 
 import 'core/api/api_client.dart';
 import 'core/api/auth_api.dart';
+import 'core/services/app_lock_service.dart';
 import 'core/services/deeplink_service.dart';
+import 'core/services/onboarding_service.dart';
 import 'core/services/session_service.dart';
 import 'core/services/settings_service.dart';
 import 'core/services/tray_service.dart';
 import 'core/services/vpn_service.dart';
 import 'core/theme/app_theme.dart';
+import 'features/lock/presentation/lock_screen.dart';
+import 'features/onboarding/presentation/onboarding_screen.dart';
 import 'features/shell/presentation/main_screen.dart';
 
 Future<void> main(List<String> args) async {
@@ -43,6 +47,8 @@ Future<void> main(List<String> args) async {
   // Инициализация сервисов до первого кадра
   await ApiClient().init();
   await SettingsService().init();
+  await AppLockService().init();
+  await OnboardingService().init();
   launchAtStartup.setup(appName: 'ECLIPSE VPN', appPath: Platform.resolvedExecutable);
   await DeepLinkService.instance.startReceiver();
   await DeepLinkService.registerProtocolHandler();
@@ -95,6 +101,11 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
     await windowManager.hide();
   }
 
+  @override
+  void onWindowMinimize() {
+    AppLockService().lock();
+  }
+
   Future<void> _quit() async {
     await _vpn.disconnect();
     exit(0);
@@ -106,7 +117,28 @@ class _EclipseVPNAppState extends State<EclipseVPNApp> with WindowListener {
       title: 'ECLIPSE VPN',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const MainScreen(),
+      home: ValueListenableBuilder<bool>(
+        valueListenable: OnboardingService().done,
+        builder: (_, done, __) {
+          if (!done) {
+            return OnboardingScreen(onDone: () => OnboardingService().markDone());
+          }
+          return const _AppGate();
+        },
+      ),
+    );
+  }
+}
+
+/// Показывает экран PIN-блокировки поверх приложения, если оно заперто.
+class _AppGate extends StatelessWidget {
+  const _AppGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: AppLockService().locked,
+      builder: (_, locked, __) => locked ? const LockScreen() : const MainScreen(),
     );
   }
 }
