@@ -16,7 +16,7 @@ import '../../../core/theme/app_theme.dart';
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
 
-  static const String appVersion = '0.2.4';
+  static const String appVersion = '0.3.0';
 
   @override
   State<SupportScreen> createState() => _SupportScreenState();

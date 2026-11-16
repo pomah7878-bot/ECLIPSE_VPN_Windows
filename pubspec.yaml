@@ -1,7 +1,7 @@
 name: eclipse_vpn_windows
 description: ECLIPSE VPN — Windows VPN client
 publish_to: 'none'
-version: 0.2.4+5
+version: 0.3.0+6
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -23,6 +23,9 @@ dependencies:
   # OAuth (PKCE SHA256)
   crypto: ^3.0.3
   url_launcher: ^6.2.2
+
+  # QR-код ключа
+  qr_flutter: ^4.1.0
 
   # Окно и трей
   window_manager: ^0.4.0

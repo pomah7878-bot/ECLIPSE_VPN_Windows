@@ -123,6 +123,10 @@ class AccountSessionResponse {
   final bool canLinkOauth;
   final List<AccountKeyDto> keys;
   final String? balanceHuman;
+  final int balanceCents;
+  final String? phone;
+  final String? email;
+  final String? avatarBase64;
 
   AccountSessionResponse({
     required this.ok,
@@ -131,6 +135,10 @@ class AccountSessionResponse {
     required this.canLinkOauth,
     required this.keys,
     this.balanceHuman,
+    this.balanceCents = 0,
+    this.phone,
+    this.email,
+    this.avatarBase64,
   });
 
   factory AccountSessionResponse.fromJson(Map<String, dynamic> json) {
@@ -144,8 +152,14 @@ class AccountSessionResponse {
           .map(AccountKeyDto.fromJson)
           .toList(),
       balanceHuman: json['balance_human']?.toString(),
+      balanceCents: _asInt(json['balance_cents']),
+      phone: json['phone']?.toString(),
+      email: json['email']?.toString(),
+      avatarBase64: json['avatar_base64']?.toString(),
     );
   }
+
+  static int _asInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
 
   static List<dynamic> _asList(dynamic value) {
     if (value is List) return value;

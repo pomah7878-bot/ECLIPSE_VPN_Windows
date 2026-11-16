@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../auth/presentation/login_screen.dart';
 import '../../devices/presentation/devices_screen.dart';
 import '../../home/presentation/home_screen.dart';
+import '../../profile/presentation/profile_screen.dart';
 import '../../purchase/presentation/purchase_screen.dart';
 import '../../support/presentation/support_screen.dart';
 
@@ -25,6 +26,13 @@ class _MainScreenState extends State<MainScreen> {
     if (_selectedIndex != index) setState(() => _selectedIndex = index);
   }
 
+  void _openProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +42,7 @@ class _MainScreenState extends State<MainScreen> {
         builder: (_, loggedIn, __) {
           final screens = <Widget>[
             loggedIn
-                ? HomeScreen(onOpenAccount: () => _goTab(1))
+                ? HomeScreen(onOpenAccount: _openProfile)
                 : LoginContent(onLoggedIn: () => _goTab(0)),
             const PurchaseScreen(),
             const DevicesScreen(),
