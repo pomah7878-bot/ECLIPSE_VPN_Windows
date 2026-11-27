@@ -7,6 +7,7 @@ import '../../../core/services/session_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/eclipse_logo.dart';
 import '../../import/presentation/import_screen.dart';
+import 'email_login_screen.dart';
 import 'phone_login_screen.dart';
 
 /// Содержимое экрана входа — по Android-приложению:
@@ -86,6 +87,14 @@ class _LoginContentState extends State<LoginContent> {
     final ok = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const PhoneLoginScreen()),
+    );
+    if (ok == true) _finishLogin();
+  }
+
+  Future<void> _showEmailLogin() async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const EmailLoginScreen()),
     );
     if (ok == true) _finishLogin();
   }
@@ -205,6 +214,12 @@ class _LoginContentState extends State<LoginContent> {
                   label: 'Войти по номеру телефона',
                   gold: false,
                   onPressed: _isLoading ? null : _showPhoneNotice,
+                ),
+                const SizedBox(height: 14),
+                _PillButton(
+                  label: 'Войти по email',
+                  gold: false,
+                  onPressed: _isLoading ? null : _showEmailLogin,
                 ),
                 const SizedBox(height: 14),
                 _PillButton(

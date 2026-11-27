@@ -145,6 +145,55 @@ class AuthApi {
     }
   }
 
+  /// POST /public/account/email/start — отправляет 6-значный код на почту.
+  Future<void> emailStart(String email) async {
+    try {
+      final response = await _client.dio.post(
+        '/public/account/email/start',
+        data: {'email': email},
+      );
+      if (response.statusCode == 200 && response.data['ok'] == true) return;
+      throw ApiException(
+        message: response.data['message']?.toString() ?? 'Не удалось отправить письмо',
+        code: response.data['error']?.toString(),
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      final data = _errorData(e);
+      throw ApiException(
+        message: data?['message']?.toString() ?? 'Не удалось отправить письмо',
+        code: data?['error']?.toString(),
+      );
+    }
+  }
+
+  /// POST /public/account/email/verify — сервер ставит cookie-сессию и отвечает {"ok":true}.
+  Future<SessionLoginResponse> emailVerify(String email, String code) async {
+    try {
+      final response = await _client.dio.post(
+        '/public/account/email/verify',
+        data: {'email': email, 'code': code},
+      );
+      if (response.statusCode == 200 && response.data['ok'] == true) {
+        return SessionLoginResponse(
+          ok: true,
+          accountType: response.data['account_type']?.toString() ?? 'email',
+        );
+      }
+      throw ApiException(
+        message: response.data['message']?.toString() ?? 'Код неверный или истёк',
+        code: response.data['error']?.toString(),
+      );
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      final data = _errorData(e);
+      throw ApiException(
+        message: data?['message']?.toString() ?? 'Код неверный или истёк',
+        code: data?['error']?.toString(),
+      );
+    }
+  }
+
   static Map<String, dynamic>? _errorData(Object e) {
     try {
       final dynamic d = e;
