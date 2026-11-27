@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  actions: read
 
 env:
   SING_BOX_VERSION: "1.14.4"
@@ -69,11 +68,9 @@ jobs:
           choco install innosetup -y
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ECLIPSE_VPN_Setup
-          path: installer/ECLIPSE_VPN_Setup_*.exe
+      # Загрузка в Actions artifacts намеренно убрана: тот же инсталлятор
+      # прикрепляется к релизу ниже, а копия в хранилище Actions только
+      # расходовала квоту (особенно при ручных запусках без релиза).
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
